@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "meteor-test-harness",
+  "version": "${version}",
+  "name": "Meteor Test Harness",
+  "description": "MCP HTTP server addon for automating Meteor addon testing via DOM-first control.",
+  "authors": [
+    "GhostTypes"
+  ],
+  "contact": {
+    "homepage": "https://github.com/MCDxAI/meteor-test-harness",
+    "sources": "https://github.com/MCDxAI/meteor-test-harness"
+  },
+  "icon": "assets/meteor-test-harness/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "meteor": [
+      "com.mcdxai.meteortestharness.MeteorTestHarnessAddon"
+    ]
+  },
+  "mixins": [],
+  "custom": {
+    "meteor-client:color": "120,210,120"
+  },
+  "depends": {
+    "java": ">=21",
+    "minecraft": ">=${mc_version}",
+    "meteor-client": ">=0.5.0"
+  }
+}
