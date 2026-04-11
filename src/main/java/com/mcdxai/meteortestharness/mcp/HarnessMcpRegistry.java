@@ -77,7 +77,7 @@ public final class HarnessMcpRegistry {
                 Map.of("include_settings", ToolSchemas.boolProperty("Include each module's full settings tree.")),
                 List.of()
             ),
-            (exchange, args) -> McpResults.ok(moduleService.listModules(args.bool("include_settings", false)))
+            (exchange, args) -> McpResults.ok(Map.of("modules", moduleService.listModules(args.bool("include_settings", false))))
         ));
 
         tools.add(tool(
@@ -128,7 +128,7 @@ public final class HarnessMcpRegistry {
             (exchange, args) -> {
                 Optional<meteordevelopment.meteorclient.systems.modules.Module> module = moduleService.findModule(args.string("module_name"));
                 if (module.isEmpty()) return McpResults.error("Module not found.");
-                return McpResults.ok(moduleService.listModuleSettings(module.get()));
+                return McpResults.ok(Map.of("settings", moduleService.listModuleSettings(module.get())));
             }
         ));
 
@@ -308,7 +308,7 @@ public final class HarnessMcpRegistry {
             "get_chat_history",
             "Get captured chat history.",
             ToolSchemas.object(Map.of("count", ToolSchemas.intProperty("Number of newest lines to return.")), List.of()),
-            (exchange, args) -> McpResults.ok(chatLogService.snapshot(args.intValue("count", 100)))
+            (exchange, args) -> McpResults.ok(Map.of("messages", chatLogService.snapshot(args.intValue("count", 100))))
         ));
 
         tools.add(tool("clear_chat_history", "Clear captured chat history buffer.", ToolSchemas.emptyObject(),
@@ -334,14 +334,20 @@ public final class HarnessMcpRegistry {
                 List.of("x", "y", "z")
             ),
             (exchange, args) -> {
-                boolean success = pathingService.moveTo(
-                    args.intValue("x", 0),
-                    args.intValue("y", 0),
-                    args.intValue("z", 0),
-                    args.bool("ignore_y", false)
-                );
+                int x = args.intValue("x", 0);
+                int y = args.intValue("y", 0);
+                int z = args.intValue("z", 0);
+                boolean ignoreY = args.bool("ignore_y", false);
+
+                boolean success = pathingService.moveTo(x, y, z, ignoreY);
                 if (!success) return McpResults.error("Player is not in a world.");
-                return McpResults.ok(pathingService.getStatus());
+
+                Map<String, Object> ack = new LinkedHashMap<>();
+                ack.put("success", true);
+                ack.put("target", Map.of("x", x, "y", y, "z", z));
+                ack.put("ignoreY", ignoreY);
+                ack.put("message", "Pathing request submitted");
+                return McpResults.ok(ack);
             }
         ));
 
@@ -350,9 +356,15 @@ public final class HarnessMcpRegistry {
             "Move player continuously in a yaw direction.",
             ToolSchemas.object(Map.of("yaw", ToolSchemas.numberProperty("Yaw in degrees.")), List.of("yaw")),
             (exchange, args) -> {
-                boolean success = pathingService.moveInDirection((float) args.doubleValue("yaw", 0));
+                float yaw = (float) args.doubleValue("yaw", 0);
+                boolean success = pathingService.moveInDirection(yaw);
                 if (!success) return McpResults.error("Player is not in a world.");
-                return McpResults.ok(pathingService.getStatus());
+
+                Map<String, Object> ack = new LinkedHashMap<>();
+                ack.put("success", true);
+                ack.put("yaw", yaw);
+                ack.put("message", "Direction pathing request submitted");
+                return McpResults.ok(ack);
             }
         ));
 

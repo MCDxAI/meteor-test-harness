@@ -12,13 +12,14 @@ meteor = "1.21.11-SNAPSHOT"
 orbit = "0.2.4"
 
 # MCP SDK
-mcp = "0.14.1"
+mcp = "1.1.1"
 
 # Runtime Dependencies
-reactor-core = "3.6.5"
+reactor-core = "3.7.0"
 reactive-streams = "1.0.4"
-json-schema-validator = "1.5.7"
-jackson = "2.18.3"
+json-schema-validator = "2.0.0"
+jackson = "2.20.1"
+jackson-annotations = "2.20"
 tomcat = "11.0.13"
 
 # Test
@@ -35,16 +36,14 @@ meteor-client = { module = "meteordevelopment:meteor-client", version.ref = "met
 orbit = { module = "meteordevelopment:orbit", version.ref = "orbit" }
 
 # MCP SDK
-mcpSdk = { module = "io.modelcontextprotocol.sdk:mcp", version.ref = "mcp" }
 mcpCore = { module = "io.modelcontextprotocol.sdk:mcp-core", version.ref = "mcp" }
-mcpJson = { module = "io.modelcontextprotocol.sdk:mcp-json", version.ref = "mcp" }
 mcpJsonJackson2 = { module = "io.modelcontextprotocol.sdk:mcp-json-jackson2", version.ref = "mcp" }
 
 # Required transitive libs (explicitly bundled for Fabric classloader stability)
 reactiveStreams = { module = "org.reactivestreams:reactive-streams", version.ref = "reactive-streams" }
 reactorCore = { module = "io.projectreactor:reactor-core", version.ref = "reactor-core" }
 jsonSchemaValidator = { module = "com.networknt:json-schema-validator", version.ref = "json-schema-validator" }
-jacksonAnnotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson" }
+jacksonAnnotations = { module = "com.fasterxml.jackson.core:jackson-annotations", version.ref = "jackson-annotations" }
 jacksonCore = { module = "com.fasterxml.jackson.core:jackson-core", version.ref = "jackson" }
 jacksonDatabind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
 jacksonDatatypeJdk8 = { module = "com.fasterxml.jackson.datatype:jackson-datatype-jdk8", version.ref = "jackson" }

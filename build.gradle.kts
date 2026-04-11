@@ -40,9 +40,7 @@ dependencies {
     compileOnly(libs.orbit)
 
     // MCP SDK
-    modInclude(libs.mcpSdk)
     modInclude(libs.mcpCore)
-    modInclude(libs.mcpJson)
     modInclude(libs.mcpJsonJackson2)
 
     // Explicitly bundled runtime deps for classloader stability in Fabric

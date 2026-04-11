@@ -10,15 +10,16 @@ import meteordevelopment.meteorclient.gui.widgets.input.WTextBox;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WCheckbox;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WPressable;
+import net.minecraft.client.gui.Click;
 import net.minecraft.client.gui.Element;
 import net.minecraft.client.gui.ParentElement;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.widget.Widget;
+import net.minecraft.client.input.MouseInput;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -69,6 +70,14 @@ public final class ScreenDomService {
     public synchronized boolean click(String id) {
         ElementRef ref = resolveRef(id);
         if (ref == null || mc.currentScreen == null) return false;
+
+        if (ref.backing instanceof Element element && ref.clickableCoordinates()) {
+            try {
+                Click click = new Click(ref.centerX(), ref.centerY(), new MouseInput(0, 0));
+                element.mouseClicked(click, false);
+                return true;
+            } catch (Exception ignored) {}
+        }
 
         if (ref.clickableCoordinates()) {
             double clickX = ref.centerX();
@@ -162,6 +171,20 @@ public final class ScreenDomService {
             ref.y = widget.getY();
             ref.width = widget.getWidth();
             ref.height = widget.getHeight();
+        }
+
+        if (element instanceof Widget widget) {
+            mapped.putIfAbsent("x", widget.getX());
+            mapped.putIfAbsent("y", widget.getY());
+            mapped.putIfAbsent("width", widget.getWidth());
+            mapped.putIfAbsent("height", widget.getHeight());
+
+            if (Double.isNaN(ref.x)) {
+                ref.x = widget.getX();
+                ref.y = widget.getY();
+                ref.width = widget.getWidth();
+                ref.height = widget.getHeight();
+            }
         }
 
         if (element instanceof TextFieldWidget textFieldWidget) {
@@ -295,67 +318,14 @@ public final class ScreenDomService {
     }
 
     private boolean invokeScreenClick(Screen screen, double x, double y, int button) {
-        // Legacy signature: mouseClicked(double, double, int)
         try {
-            Method legacyClick = screen.getClass().getMethod("mouseClicked", double.class, double.class, int.class);
-            Method legacyRelease = screen.getClass().getMethod("mouseReleased", double.class, double.class, int.class);
-            legacyClick.invoke(screen, x, y, button);
-            legacyRelease.invoke(screen, x, y, button);
-            return true;
-        } catch (Exception ignored) {
-            // Try newer Click-based signatures below.
-        }
-
-        try {
-            Method clickMethod = null;
-            for (Method method : screen.getClass().getMethods()) {
-                if (!method.getName().equals("mouseClicked")) continue;
-                Class<?>[] params = method.getParameterTypes();
-                if (params.length == 2 && params[1] == boolean.class) {
-                    clickMethod = method;
-                    break;
-                }
-            }
-
-            if (clickMethod == null) return false;
-
-            Class<?> clickType = clickMethod.getParameterTypes()[0];
-            Object clickObj = createClick(clickType, x, y, button);
-            if (clickObj == null) return false;
-
-            clickMethod.invoke(screen, clickObj, false);
-
-            for (Method method : screen.getClass().getMethods()) {
-                if (!method.getName().equals("mouseReleased")) continue;
-                Class<?>[] params = method.getParameterTypes();
-                if (params.length == 1 && params[0].isAssignableFrom(clickType)) {
-                    method.invoke(screen, clickObj);
-                    break;
-                }
-            }
-
+            Click click = new Click(x, y, new MouseInput(button, 0));
+            screen.mouseClicked(click, false);
+            screen.mouseReleased(click);
             return true;
         } catch (Exception ignored) {
             return false;
         }
-    }
-
-    private Object createClick(Class<?> clickType, double x, double y, int button) {
-        try {
-            for (Constructor<?> constructor : clickType.getConstructors()) {
-                Class<?>[] params = constructor.getParameterTypes();
-                if (params.length == 3
-                    && (params[0] == double.class || params[0] == Double.class)
-                    && (params[1] == double.class || params[1] == Double.class)
-                    && (params[2] == int.class || params[2] == Integer.class)) {
-                    return constructor.newInstance(x, y, button);
-                }
-            }
-        } catch (Exception ignored) {
-            // Fall through.
-        }
-
-        return null;
     }
 
     private static final class ElementRef {
