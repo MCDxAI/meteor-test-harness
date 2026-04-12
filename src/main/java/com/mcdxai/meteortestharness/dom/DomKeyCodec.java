@@ -1,4 +1,4 @@
-package com.mcdxai.meteortestharness.services.screendom;
+package com.mcdxai.meteortestharness.dom;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -8,7 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-public final class ScreenKeyCodec {
+public final class DomKeyCodec {
     public static final int VERSION = 3;
 
     private static final Map<String, String> KEY_ALIASES = Map.ofEntries(
@@ -40,7 +40,7 @@ public final class ScreenKeyCodec {
         Map.entry("COMMAND", "LEFT_SUPER")
     );
 
-    private ScreenKeyCodec() {
+    private DomKeyCodec() {
     }
 
     public static Integer parseKeyCode(String keyName) {

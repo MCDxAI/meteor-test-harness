@@ -1,4 +1,4 @@
-package com.mcdxai.meteortestharness.services.screendom;
+package com.mcdxai.meteortestharness.dom;
 
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
 import meteordevelopment.meteorclient.gui.widgets.input.WSlider;
@@ -12,14 +12,13 @@ import net.minecraft.client.gui.widget.EntryListWidget;
 import net.minecraft.client.gui.widget.ScrollableWidget;
 import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.Widget;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public final class ScreenDomActionHints {
-    private ScreenDomActionHints() {
+public final class DomActionHints {
+    private DomActionHints() {
     }
 
     public static void addVanillaHints(Map<String, Object> mapped, Element element, EntryListWidget<?> owningList, double x, double y, double w, double h) {
