@@ -10,6 +10,7 @@ loom = "1.14-SNAPSHOT"
 # Meteor
 meteor = "1.21.11-SNAPSHOT"
 orbit = "0.2.4"
+baritone = "1.21.10-SNAPSHOT"
 
 # MCP SDK
 mcp = "1.1.1"
@@ -34,6 +35,7 @@ fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-l
 # Meteor
 meteor-client = { module = "meteordevelopment:meteor-client", version.ref = "meteor" }
 orbit = { module = "meteordevelopment:orbit", version.ref = "orbit" }
+baritone = { module = "meteordevelopment:baritone", version.ref = "baritone" }
 
 # MCP SDK
 mcpCore = { module = "io.modelcontextprotocol.sdk:mcp-core", version.ref = "mcp" }

@@ -20,7 +20,9 @@ public final class HarnessMcpRegistry {
         HarnessCoreTools.register(tools, context);
         HarnessModuleTools.register(tools, context);
         HarnessWorldStateTools.register(tools, context);
-        HarnessDomTools.register(tools, context);
+        HarnessDomQueryTools.register(tools, context);
+        HarnessDomInteractionTools.register(tools, context);
+        HarnessDomInputTools.register(tools, context);
         HarnessWorldActionTools.register(tools, context);
         HarnessPathingTools.register(tools, context);
 

@@ -36,14 +36,8 @@ final class HarnessPathingTools {
                 int z = args.intValue("z", 0);
                 boolean ignoreY = args.bool("ignore_y", false);
 
-                boolean success = pathingService.moveTo(x, y, z, ignoreY);
-                if (!success) return McpResults.error("Player is not in a world.");
-
-                Map<String, Object> ack = new LinkedHashMap<>();
-                ack.put("success", true);
-                ack.put("target", Map.of("x", x, "y", y, "z", z));
-                ack.put("ignoreY", ignoreY);
-                ack.put("message", "Pathing request submitted");
+                Map<String, Object> ack = pathingService.startMoveTo(x, y, z, ignoreY);
+                if (ack == null) return McpResults.error("Player is not in a world.");
                 return McpResults.ok(ack);
             }
         ));
@@ -54,14 +48,43 @@ final class HarnessPathingTools {
             ToolSchemas.object(Map.of("yaw", ToolSchemas.numberProperty("Yaw in degrees.")), List.of("yaw")),
             (exchange, args) -> {
                 float yaw = (float) args.doubleValue("yaw", 0);
-                boolean success = pathingService.moveInDirection(yaw);
-                if (!success) return McpResults.error("Player is not in a world.");
-
-                Map<String, Object> ack = new LinkedHashMap<>();
-                ack.put("success", true);
-                ack.put("yaw", yaw);
-                ack.put("message", "Direction pathing request submitted");
+                Map<String, Object> ack = pathingService.startMoveInDirection(yaw);
+                if (ack == null) return McpResults.error("Player is not in a world.");
                 return McpResults.ok(ack);
+            }
+        ));
+
+        tools.add(context.tool(
+            "wait_for_pathing_action",
+            "Wait for a tracked pathing action to reach terminal state (or paused when requested).",
+            ToolSchemas.object(
+                Map.of(
+                    "action_id", ToolSchemas.stringProperty("Action id returned by pathing_move_to or pathing_move_in_direction. Defaults to current active action."),
+                    "timeout_ms", ToolSchemas.intProperty("Maximum wait duration in milliseconds."),
+                    "return_on", Map.of(
+                        "type", "string",
+                        "description", "Condition to return early: terminal (default) or paused.",
+                        "enum", List.of("terminal", "paused")
+                    )
+                ),
+                List.of()
+            ),
+            false,
+            (exchange, args) -> {
+                String actionId = args.string("action_id");
+                int requestedTimeoutMs = args.intValue("timeout_ms", 30_000);
+                String returnOn = args.string("return_on", "terminal");
+                boolean returnOnPaused = "paused".equalsIgnoreCase(returnOn);
+
+                int maxWaitMs = Math.max(100, context.requestTimeoutMillis() - 250);
+                int timeoutMs = Math.max(100, Math.min(requestedTimeoutMs, maxWaitMs));
+                boolean clamped = timeoutMs != requestedTimeoutMs;
+
+                Map<String, Object> result = new LinkedHashMap<>(pathingService.waitForAction(actionId, timeoutMs, returnOnPaused));
+                result.put("requested_timeout_ms", requestedTimeoutMs);
+                result.put("effective_timeout_ms", timeoutMs);
+                result.put("timeout_clamped_by_server", clamped);
+                return McpResults.ok(result);
             }
         ));
 

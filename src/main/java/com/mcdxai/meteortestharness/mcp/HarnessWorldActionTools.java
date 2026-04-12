@@ -57,7 +57,7 @@ final class HarnessWorldActionTools {
 
         tools.add(context.tool("disconnect_world", "Disconnect from current world/server.", ToolSchemas.emptyObject(),
             (exchange, args) -> {
-                context.disconnectToTitle();
+                context.harnessService().disconnectToTitle();
                 return McpResults.ok(Map.of("inWorld", mc.world != null));
             }
         ));

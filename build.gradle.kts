@@ -44,6 +44,7 @@ dependencies {
     // Meteor
     modImplementation(libs.meteor.client)
     compileOnly(libs.orbit)
+    modCompileOnly(libs.baritone)
 
     // MCP SDK
     modInclude(libs.mcpCore)

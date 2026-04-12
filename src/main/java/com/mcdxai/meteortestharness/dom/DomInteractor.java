@@ -89,6 +89,7 @@ public final class DomInteractor {
         if (!response.containsKey("reason")) {
             response.put("reason", interaction.getOrDefault("reason", "click_result"));
         }
+        response.put("screenContext", postInteractionScreenContext(interaction));
         return response;
     }
 
@@ -138,6 +139,7 @@ public final class DomInteractor {
         if (!response.containsKey("reason")) {
             response.put("reason", interaction.getOrDefault("reason", "set_text_result"));
         }
+        response.put("screenContext", postInteractionScreenContext(interaction));
         return response;
     }
 
@@ -526,6 +528,34 @@ public final class DomInteractor {
         result.put("screenChanged", screenBefore != screenAfter);
         result.put("screenAfter", screenAfter == null ? null : metadataHelper.classMetadata(screenAfter.getClass()));
         return result;
+    }
+
+    private Map<String, Object> postInteractionScreenContext(Map<String, Object> interaction) {
+        boolean changed = asBoolean(interaction.get("screenChanged"), false);
+        Screen screen = mc.currentScreen;
+        Map<String, Object> ctx = new LinkedHashMap<>();
+
+        if (screen == null) {
+            ctx.put("screenTitle", null);
+            ctx.put("screenType", null);
+            ctx.put("screenChanged", true);
+            ctx.put("hint", "No screen is open. You are in the game world.");
+            return ctx;
+        }
+
+        String title = screen.getTitle() == null ? "" : screen.getTitle().getString();
+        String type = metadataHelper.classMetadata(screen.getClass())
+            .getOrDefault("typeMapped", "").toString();
+
+        ctx.put("screenTitle", title.isBlank() ? null : title);
+        ctx.put("screenType", type);
+        ctx.put("screenChanged", changed);
+
+        if (changed) {
+            ctx.put("hint", "Screen changed. Use get_screen_dom or get_screen_dom_summary to inspect the new screen.");
+        }
+
+        return ctx;
     }
 
     private void refreshCoordinates(ElementRef ref) {
