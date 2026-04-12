@@ -366,7 +366,7 @@ public final class HarnessMcpRegistry {
 
         tools.add(tool(
             "press_screen_key",
-            "Send a key press/release to the active screen.",
+            "Send a key press/release. Targets active screen when present, otherwise uses global in-game key handling.",
             ToolSchemas.object(
                 Map.of(
                     "key", ToolSchemas.stringProperty("Key name (e.g. ENTER, ESCAPE, TAB, UP, A, F5)."),
@@ -714,6 +714,8 @@ public final class HarnessMcpRegistry {
         status.put("mappingRuntimeNamedAvailable", nameMappingService.hasRuntimeNamedMappings());
         status.put("mappingBundledNamedAvailable", nameMappingService.hasBundledNamedMappings());
         status.put("mappingBundledNamedClassCount", nameMappingService.getBundledNamedClassCount());
+        status.put("mappingBundledSource", nameMappingService.getBundledMappingsSource());
+        status.put("mappingBundledError", nameMappingService.getBundledMappingsError());
 
         Screen currentScreen = mc.currentScreen;
         if (currentScreen == null) {

@@ -24,6 +24,8 @@ import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.input.CharInput;
 import net.minecraft.client.input.KeyInput;
 import net.minecraft.client.input.MouseInput;
+import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.util.InputUtil;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -61,6 +63,8 @@ public final class ScreenDomService {
         payload.put("mappingRuntimeNamedAvailable", nameMappingService.hasRuntimeNamedMappings());
         payload.put("mappingBundledNamedAvailable", nameMappingService.hasBundledNamedMappings());
         payload.put("mappingBundledNamedClassCount", nameMappingService.getBundledNamedClassCount());
+        payload.put("mappingBundledSource", nameMappingService.getBundledMappingsSource());
+        payload.put("mappingBundledError", nameMappingService.getBundledMappingsError());
 
         if (screen == null) {
             payload.put("screen", null);
@@ -302,22 +306,28 @@ public final class ScreenDomService {
         result.put("repeat", repeat);
         result.put("release", release);
 
-        Screen screen = mc.currentScreen;
-        if (screen == null) {
-            result.put("reason", "no_active_screen");
-            return finishInteraction(result, false, "none", null);
-        }
-
         Integer keyCode = ScreenKeyCodec.parseKeyCode(keyName);
         if (keyCode == null) {
             result.put("reason", "unknown_key");
-            return finishInteraction(result, false, "none", screen);
+            return finishInteraction(result, false, "none", mc.currentScreen);
         }
 
-        boolean handled = pressKey(screen, keyCode, modifiers, Math.max(1, Math.min(32, repeat)), release);
+        int clampedRepeat = Math.max(1, Math.min(32, repeat));
+        Screen screen = mc.currentScreen;
+        boolean handled;
+        String path;
+
+        if (screen != null) {
+            handled = pressKey(screen, keyCode, modifiers, clampedRepeat, release);
+            path = "screen";
+        } else {
+            handled = pressGlobalKey(keyCode, modifiers, clampedRepeat, release, result);
+            path = "global";
+        }
+
         result.put("keyCode", keyCode);
         result.put("reason", handled ? "key_handled" : "key_not_handled");
-        return finishInteraction(result, handled, "screen", screen);
+        return finishInteraction(result, handled, path, screen);
     }
 
     public synchronized Map<String, Object> scrollDetailed(String id, double verticalAmount, double horizontalAmount) {
@@ -719,6 +729,56 @@ public final class ScreenDomService {
         }
 
         return handled;
+    }
+
+    private boolean pressGlobalKey(int keyCode, int modifiers, int repeat, boolean release, Map<String, Object> result) {
+        boolean handled = false;
+        KeyInput input = new KeyInput(keyCode, 0, modifiers);
+        InputUtil.Key key = InputUtil.fromKeyCode(input);
+
+        int matchedBindings = countMatchingBindings(input);
+        result.put("matchedBindings", matchedBindings);
+
+        // Mirror Keyboard.onKey behavior for ESC when no screen is open.
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && mc.currentScreen == null) {
+            mc.openGameMenu(false);
+            handled = mc.currentScreen != null;
+            result.put("openedGameMenu", handled);
+        }
+
+        for (int i = 0; i < repeat; i++) {
+            try {
+                KeyBinding.setKeyPressed(key, true);
+                KeyBinding.onKeyPressed(key);
+                handled = handled || matchedBindings > 0;
+            } catch (Exception ignored) {
+                // Continue attempts.
+            }
+        }
+
+        if (release) {
+            try {
+                KeyBinding.setKeyPressed(key, false);
+            } catch (Exception ignored) {
+                // Ignore release failure.
+            }
+        }
+
+        return handled;
+    }
+
+    private int countMatchingBindings(KeyInput input) {
+        if (mc.options == null || mc.options.allKeys == null) {
+            return 0;
+        }
+
+        int count = 0;
+        for (KeyBinding binding : mc.options.allKeys) {
+            if (binding != null && binding.matchesKey(input)) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private boolean invokeScreenClick(Screen screen, Click click, boolean doubled) {

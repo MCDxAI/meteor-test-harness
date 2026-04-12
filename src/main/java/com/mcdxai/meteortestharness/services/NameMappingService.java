@@ -2,16 +2,22 @@ package com.mcdxai.meteortestharness.services;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.MappingResolver;
+import net.fabricmc.loader.api.ModContainer;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -20,7 +26,10 @@ public final class NameMappingService {
     private static final String NAMED_NAMESPACE = "named";
     private static final String INTERMEDIARY_NAMESPACE = "intermediary";
     private static final String UNKNOWN_NAMESPACE = "unknown";
-    private static final String BUNDLED_YARN_MAPPINGS_RESOURCE = "/mappings/yarn.tiny";
+
+    private static final String PRIMARY_MAPPINGS_RESOURCE = "mappings/yarn.tiny";
+    private static final String LEGACY_MAPPINGS_RESOURCE = "mappings/mappings.tiny";
+    private static final String MOD_ID = "meteor-test-harness";
 
     private final MappingResolver mappingResolver;
     private final Set<String> namespaces;
@@ -30,6 +39,8 @@ public final class NameMappingService {
     private final boolean runtimeNamedAvailable;
     private final boolean bundledNamedAvailable;
     private final String mappingMode;
+    private final String bundledMappingsSource;
+    private final String bundledMappingsError;
     private final ConcurrentMap<String, String> classNameCache = new ConcurrentHashMap<>();
 
     public NameMappingService() {
@@ -42,10 +53,11 @@ public final class NameMappingService {
             availableNamespaces = Set.copyOf(new LinkedHashSet<>(resolver.getNamespaces()));
             runtime = resolver.getCurrentRuntimeNamespace();
         } catch (Exception ignored) {
-            // Leave mapping disabled when resolver is unavailable.
+            // Leave mapping resolver unavailable when loader API is not ready.
         }
 
-        Map<String, String> bundledMappings = loadBundledIntermediaryToNamed();
+        BundledMappingLoadResult bundledResult = loadBundledIntermediaryToNamed();
+        Map<String, String> bundledMappings = bundledResult.mappings;
         boolean hasRuntimeNamed = availableNamespaces.contains(NAMED_NAMESPACE);
         boolean hasBundledNamed = !bundledMappings.isEmpty();
 
@@ -57,6 +69,8 @@ public final class NameMappingService {
         this.runtimeNamedAvailable = hasRuntimeNamed;
         this.bundledNamedAvailable = hasBundledNamed;
         this.mappingMode = resolveMappingMode(runtime, hasRuntimeNamed, hasBundledNamed);
+        this.bundledMappingsSource = bundledResult.source;
+        this.bundledMappingsError = bundledResult.error;
     }
 
     public String mapClassName(String rawClassName) {
@@ -114,6 +128,14 @@ public final class NameMappingService {
 
     public int getBundledNamedClassCount() {
         return bundledIntermediaryToNamed.size();
+    }
+
+    public String getBundledMappingsSource() {
+        return bundledMappingsSource;
+    }
+
+    public String getBundledMappingsError() {
+        return bundledMappingsError;
     }
 
     private String remapToPreferredNamespace(String rawClassName) {
@@ -219,28 +241,38 @@ public final class NameMappingService {
         return "runtime_only";
     }
 
-    private Map<String, String> loadBundledIntermediaryToNamed() {
-        try (InputStream stream = NameMappingService.class.getResourceAsStream(BUNDLED_YARN_MAPPINGS_RESOURCE)) {
-            if (stream == null) {
-                return Map.of();
+    private BundledMappingLoadResult loadBundledIntermediaryToNamed() {
+        List<String> attempts = new ArrayList<>();
+
+        try {
+            OpenedStream openedStream = openBundledMappingsStream(attempts);
+            if (openedStream == null || openedStream.stream == null) {
+                String details = attempts.isEmpty() ? "none" : String.join(" | ", attempts);
+                return BundledMappingLoadResult.failure("not_found", details);
             }
 
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+            try (InputStream stream = openedStream.stream;
+                 BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
                 String header = reader.readLine();
-                if (header == null || !header.startsWith("tiny\t")) {
-                    return Map.of();
+                if (header == null) {
+                    return BundledMappingLoadResult.failure(openedStream.source, "empty_file");
+                }
+
+                header = stripBom(header).trim();
+                if (!header.startsWith("tiny\t")) {
+                    return BundledMappingLoadResult.failure(openedStream.source, "invalid_header:" + header);
                 }
 
                 String[] headerParts = header.split("\t", -1);
                 if (headerParts.length < 5) {
-                    return Map.of();
+                    return BundledMappingLoadResult.failure(openedStream.source, "header_too_short:" + headerParts.length);
                 }
 
                 int namespaceStart = 3;
-                int intermediaryColumn = findNamespaceColumn(headerParts, namespaceStart, INTERMEDIARY_NAMESPACE);
-                int namedColumn = findNamespaceColumn(headerParts, namespaceStart, NAMED_NAMESPACE);
+                int intermediaryColumn = findNamespaceLineColumn(headerParts, namespaceStart, INTERMEDIARY_NAMESPACE);
+                int namedColumn = findNamespaceLineColumn(headerParts, namespaceStart, NAMED_NAMESPACE);
                 if (intermediaryColumn < 0 || namedColumn < 0) {
-                    return Map.of();
+                    return BundledMappingLoadResult.failure(openedStream.source, "missing_namespaces:intermediary_or_named");
                 }
 
                 Map<String, String> mappings = new HashMap<>();
@@ -267,17 +299,109 @@ public final class NameMappingService {
                     mappings.putIfAbsent(intermediary, named);
                 }
 
-                return Map.copyOf(mappings);
+                if (mappings.isEmpty()) {
+                    return BundledMappingLoadResult.failure(openedStream.source, "no_class_entries_parsed");
+                }
+
+                return BundledMappingLoadResult.success(Map.copyOf(mappings), openedStream.source);
             }
-        } catch (Exception ignored) {
-            return Map.of();
+        } catch (Exception e) {
+            String details = attempts.isEmpty() ? "none" : String.join(" | ", attempts);
+            return BundledMappingLoadResult.failure("exception", e.getClass().getSimpleName() + ":" + e.getMessage() + " attempts=" + details);
         }
     }
 
-    private static int findNamespaceColumn(String[] headerParts, int namespaceStart, String namespace) {
+    private OpenedStream openBundledMappingsStream(List<String> attempts) {
+        OpenedStream stream;
+
+        stream = tryClassResource("/" + PRIMARY_MAPPINGS_RESOURCE);
+        if (stream != null) {
+            return stream;
+        }
+        attempts.add("class:/" + PRIMARY_MAPPINGS_RESOURCE + "=missing");
+
+        stream = tryClassLoaderResource(PRIMARY_MAPPINGS_RESOURCE);
+        if (stream != null) {
+            return stream;
+        }
+        attempts.add("classloader:" + PRIMARY_MAPPINGS_RESOURCE + "=missing");
+
+        stream = tryClassResource("/" + LEGACY_MAPPINGS_RESOURCE);
+        if (stream != null) {
+            return stream;
+        }
+        attempts.add("class:/" + LEGACY_MAPPINGS_RESOURCE + "=missing");
+
+        stream = tryClassLoaderResource(LEGACY_MAPPINGS_RESOURCE);
+        if (stream != null) {
+            return stream;
+        }
+        attempts.add("classloader:" + LEGACY_MAPPINGS_RESOURCE + "=missing");
+
+        stream = tryModContainerPath(PRIMARY_MAPPINGS_RESOURCE, attempts);
+        if (stream != null) {
+            return stream;
+        }
+
+        stream = tryModContainerPath(LEGACY_MAPPINGS_RESOURCE, attempts);
+        if (stream != null) {
+            return stream;
+        }
+
+        return null;
+    }
+
+    private OpenedStream tryClassResource(String path) {
+        InputStream stream = NameMappingService.class.getResourceAsStream(path);
+        if (stream == null) {
+            return null;
+        }
+        return new OpenedStream(stream, "class:" + path);
+    }
+
+    private OpenedStream tryClassLoaderResource(String path) {
+        ClassLoader classLoader = NameMappingService.class.getClassLoader();
+        if (classLoader == null) {
+            return null;
+        }
+
+        InputStream stream = classLoader.getResourceAsStream(path);
+        if (stream == null) {
+            return null;
+        }
+        return new OpenedStream(stream, "classloader:" + path);
+    }
+
+    private OpenedStream tryModContainerPath(String relativePath, List<String> attempts) {
+        try {
+            Optional<ModContainer> container = FabricLoader.getInstance().getModContainer(MOD_ID);
+            if (container.isEmpty()) {
+                attempts.add("mod_container:" + MOD_ID + "=missing");
+                return null;
+            }
+
+            Optional<Path> path = container.get().findPath(relativePath);
+            if (path.isEmpty()) {
+                attempts.add("mod_path:" + relativePath + "=missing");
+                return null;
+            }
+
+            if (!Files.exists(path.get())) {
+                attempts.add("mod_path:" + path.get() + "=not_exists");
+                return null;
+            }
+
+            return new OpenedStream(Files.newInputStream(path.get()), "mod:" + path.get());
+        } catch (Exception e) {
+            attempts.add("mod_lookup_error:" + e.getClass().getSimpleName());
+            return null;
+        }
+    }
+
+    private static int findNamespaceLineColumn(String[] headerParts, int namespaceStart, String namespace) {
         for (int i = namespaceStart; i < headerParts.length; i++) {
-            if (namespace.equals(headerParts[i])) {
-                return i;
+            if (namespace.equals(stripBom(headerParts[i]).trim())) {
+                return 1 + (i - namespaceStart);
             }
         }
         return -1;
@@ -287,6 +411,46 @@ public final class NameMappingService {
         if (name == null || name.isBlank()) {
             return "";
         }
-        return name.replace('/', '.');
+        return stripBom(name).replace('/', '.').trim();
+    }
+
+    private static String stripBom(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+        if (value.charAt(0) == '\uFEFF') {
+            return value.substring(1);
+        }
+        return value;
+    }
+
+    private static final class OpenedStream {
+        private final InputStream stream;
+        private final String source;
+
+        private OpenedStream(InputStream stream, String source) {
+            this.stream = stream;
+            this.source = source;
+        }
+    }
+
+    private static final class BundledMappingLoadResult {
+        private final Map<String, String> mappings;
+        private final String source;
+        private final String error;
+
+        private BundledMappingLoadResult(Map<String, String> mappings, String source, String error) {
+            this.mappings = mappings;
+            this.source = source;
+            this.error = error;
+        }
+
+        private static BundledMappingLoadResult success(Map<String, String> mappings, String source) {
+            return new BundledMappingLoadResult(mappings, source, null);
+        }
+
+        private static BundledMappingLoadResult failure(String source, String error) {
+            return new BundledMappingLoadResult(Map.of(), source, error);
+        }
     }
 }

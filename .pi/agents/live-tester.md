@@ -65,30 +65,82 @@ You use this skill primarily for its **MCP server tooling** — source lookup, m
 - A mixin-related crash occurs → analyze the mixin against the running Minecraft version
 - An addon feature behaves differently than documented → check Fabric docs for the correct pattern
 
-## meteor-harness MCP Server — Your Primary Interface
+## meteor-harness MCP Server — Tool Reference
 
-The meteor-harness MCP server is your main tool for interacting with the live Minecraft instance. Use `mcp_search` to discover available tools, `mcp_describe` to understand their parameters, and `mcp_call` to execute them.
+You know ALL 32 `meteor_harness_*` tools by heart. Do **not** waste time on `mcp_search` / `mcp_describe` discovery — call them directly via `mcp_call` on server `"meteor-harness"`. The reference below is exhaustive.
 
-**Discovery workflow:**
+### Session & Status
+
+| Tool | Parameters | Notes |
+|------|-----------|-------|
+| `meteor_harness_get_harness_status` | *(none)* | Server health, session owner, MC version. Use as your connectivity heartbeat. |
+| `meteor_harness_release_session` | *(none)* | Release single-session lock so another client can connect. |
+
+### Screen / DOM
+
+| Tool | Parameters | Notes |
+|------|-----------|-------|
+| `meteor_harness_get_screen_dom` | *(none)* | Full DOM tree of the current screen (or in-game HUD if no screen open). |
+| `meteor_harness_click_dom_element` | `element_id` (string, **required**), `button` (integer, default `0`=left), `double_click` (boolean) | Click by DOM element ID. |
+| `meteor_harness_set_dom_text` | `element_id` (string, **required**), `text` (string, **required**), `clear_first` (boolean), `submit` (boolean), `type_characters` (boolean) | Set text field content. |
+| `meteor_harness_type_dom_text` | `element_id` (string, **required**), `text` (string, **required**), `clear_first` (boolean, default `true`), `submit` (boolean) | Type text character-by-character into a field. |
+| `meteor_harness_set_dom_value` | `element_id` (string, **required**), `value` (object, **required**) | Set a non-text value (e.g. toggle, slider, enum). |
+| `meteor_harness_scroll_dom_element` | `element_id` (string, optional), `vertical` (number), `horizontal` (number) | Scroll a widget. Omit `element_id` to scroll the root screen. |
+| `meteor_harness_drag_dom_element` | `element_id` (string, **required**), `offset_x` (number, **required**), `offset_y` (number, **required**), `button` (integer, default `0`), `steps` (integer, default `8`) | Drag an element by offset. |
+| `meteor_harness_press_screen_key` | `key` (string, **required** — e.g. `ENTER`, `ESCAPE`, `TAB`, `UP`, `A`, `F5`), `modifiers` (integer, default `0`), `repeat` (integer, default `1`), `release` (boolean, default `true`) | Press a keyboard key on the active screen. |
+| `meteor_harness_navigate_back` | *(none)* | Close current screen / go back (ESC equivalent). |
+
+### Player / World / Inventory
+
+| Tool | Parameters | Notes |
+|------|-----------|-------|
+| `meteor_harness_get_player_state` | *(none)* | Returns: `inWorld`, `name`, `uuid`, `position{x,y,z}`, `blockPosition`, `velocity`, `yaw`, `pitch`, `health`, `maxHealth`, `absorption`, `hunger`, `saturation`, `experienceLevel`, `experienceProgress`, `air`, `maxAir`, `onGround`, `sneaking`, `sprinting`, `swimming`, `fallFlying`, `usingItem`, `mainHand{itemId,count,name,…}`, `offHand{…}`, `armor[…]`, `inventory[…]`, `effects[…]`, `crosshairTarget{…}` |
+| `meteor_harness_get_world_state` | *(none)* | Current world info (dimension, seed, time, etc.). |
+| `meteor_harness_get_inventory_state` | *(none)* | Full player inventory details. |
+| `meteor_harness_get_nearby_entities` | `radius` (number, default `32`), `max_count` (integer, default `64`) | Entities within radius of the player. |
+
+### Chat
+
+| Tool | Parameters | Notes |
+|------|-----------|-------|
+| `meteor_harness_send_chat` | `message` (string, **required**) | Send a chat message (or any text to chat input). |
+| `meteor_harness_send_command` | `command` (string, **required**, with or without leading `/`) | Execute a command. |
+| `meteor_harness_get_chat_history` | `count` (integer, optional) | Retrieve recent chat messages. |
+| `meteor_harness_clear_chat_history` | *(none)* | Clear stored chat history. |
+
+### Modules
+
+| Tool | Parameters | Notes |
+|------|-----------|-------|
+| `meteor_harness_list_modules` | `include_settings` (boolean) | List all Meteor modules, optionally with their settings. |
+| `meteor_harness_get_module` | `module_name` (string, **required**), `include_settings` (boolean) | Get a single module's state (and optionally its settings). |
+| `meteor_harness_set_module_state` | `module_name` (string, **required**), `active` (boolean, **required**) | Toggle a module on or off. |
+| `meteor_harness_list_module_settings` | `module_name` (string, **required**) | List all settings for a module. |
+| `meteor_harness_get_module_setting` | `module_name` (string, **required**), `setting_name` (string, **required**) | Read a single setting value. |
+| `meteor_harness_set_module_setting` | `module_name` (string, **required**), `setting_name` (string, **required**), `value` (**required**, any type — scalars, maps, lists supported) | Write a setting value. |
+| `meteor_harness_get_meteor_module_schema` | *(none)* | Resource tool — returns ALL modules with full setting schemas and current values. |
+
+### Pathing
+
+| Tool | Parameters | Notes |
+|------|-----------|-------|
+| `meteor_harness_get_pathing_status` | *(none)* | Current pathing state (active, paused, destination, etc.). |
+| `meteor_harness_pathing_move_to` | `x` (integer, **required**), `y` (integer, **required**), `z` (integer, **required**), `ignore_y` (boolean) | Path to block coordinates. |
+| `meteor_harness_pathing_move_in_direction` | `yaw` (number, **required**) | Start moving in a yaw direction. |
+| `meteor_harness_pathing_pause` | *(none)* | Pause active pathing. |
+| `meteor_harness_pathing_resume` | *(none)* | Resume paused pathing. |
+| `meteor_harness_pathing_stop` | *(none)* | Stop pathing entirely. |
+
+### World Management
+
+| Tool | Parameters | Notes |
+|------|-----------|-------|
+| `meteor_harness_disconnect_world` | *(none)* | Disconnect from the current world/server (return to main menu). |
+
+**Calling convention:** Every tool above lives on MCP server `"meteor-harness"`. Call via:
 ```
-1. mcp_search(query: "meteor harness") — find all harness tools
-2. mcp_describe(tool: "tool_name") — understand parameters and return types
-3. mcp_call(tool: "tool_name", args: {...}) — execute against live instance
+mcp_call(tool: "meteor_harness_<tool_name>", args: { ... }, server: "meteor-harness")
 ```
-
-**Common operations you'll perform:**
-- Query player state (position, health, inventory, gamemode)
-- Execute chat commands or Meteor commands
-- Toggle modules and read their state
-- Inspect GUI screens and HUD elements
-- Read game logs for errors and warnings
-- Take snapshots of the current screen state for visual verification
-
-**Handling MCP responses:**
-- Always validate the full response structure — check for expected fields, not just "no error"
-- Pay attention to status codes, error messages, and null/unexpected values
-- If a response is unexpectedly empty, it may indicate the addon isn't loaded or a feature isn't registered
-- Log the full MCP response in your test results for traceability
 
 ## Testing Workflow
 

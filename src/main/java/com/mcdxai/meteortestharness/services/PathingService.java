@@ -11,10 +11,33 @@ import static meteordevelopment.meteorclient.MeteorClient.mc;
 
 public final class PathingService {
     public Map<String, Object> getStatus() {
-        IPathManager pathManager = PathManagers.get();
-
         Map<String, Object> status = new LinkedHashMap<>();
-        status.put("inWorld", mc.player != null && mc.world != null);
+        boolean inWorld = mc.player != null && mc.world != null;
+        status.put("inWorld", inWorld);
+
+        if (!inWorld) {
+            status.put("manager", null);
+            status.put("isPathing", false);
+            return status;
+        }
+
+        IPathManager pathManager;
+        try {
+            pathManager = PathManagers.get();
+        } catch (Exception ignored) {
+            status.put("manager", null);
+            status.put("isPathing", false);
+            status.put("error", "path_manager_unavailable");
+            return status;
+        }
+
+        if (pathManager == null) {
+            status.put("manager", null);
+            status.put("isPathing", false);
+            status.put("error", "path_manager_null");
+            return status;
+        }
+
         status.put("manager", pathManager.getName());
         status.put("isPathing", pathManager.isPathing());
         status.put("targetYaw", pathManager.getTargetYaw());
