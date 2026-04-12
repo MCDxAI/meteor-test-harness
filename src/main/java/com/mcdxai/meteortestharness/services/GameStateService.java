@@ -2,6 +2,7 @@ package com.mcdxai.meteortestharness.services;
 
 import net.minecraft.block.BlockState;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.network.PlayerListEntry;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EquipmentSlot;
@@ -16,6 +17,7 @@ import net.minecraft.util.hit.EntityHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -58,14 +60,12 @@ public final class GameStateService {
         state.put("sprinting", player.isSprinting());
         state.put("swimming", player.isSwimming());
         state.put("fallFlying", player.isGliding());
+        state.put("flying", player.getAbilities().flying);
+        state.put("mayFly", player.getAbilities().allowFlying);
         state.put("usingItem", player.isUsingItem());
+        state.put("gameMode", resolveGameMode(player));
 
-        state.put("mainHand", itemStack(player.getMainHandStack()));
-        state.put("offHand", itemStack(player.getOffHandStack()));
-        state.put("armor", armor(player));
-        state.put("inventory", inventory(player));
         state.put("effects", effects(player));
-        state.put("crosshairTarget", crosshairTarget());
 
         return state;
     }
@@ -106,7 +106,7 @@ public final class GameStateService {
         return state;
     }
 
-    public Map<String, Object> getInventoryState() {
+    public Map<String, Object> getPlayerInventory(String section, int row, int slotStart, int slotEnd, boolean includeEmpty) {
         Map<String, Object> state = new LinkedHashMap<>();
 
         ClientPlayerEntity player = mc.player;
@@ -115,14 +115,49 @@ public final class GameStateService {
             return state;
         }
 
-        state.put("inWorld", true);
-        state.put("selectedSlot", resolveSelectedSlot(player));
-        state.put("main", inventory(player));
-        state.put("mainHand", itemStack(player.getMainHandStack()));
-        state.put("offHand", itemStack(player.getOffHandStack()));
-        state.put("armor", armor(player));
+        var inventory = player.getInventory();
+        int selectedSlot = resolveSelectedSlot(player);
+        String normalizedSection = normalizeInventorySection(section);
 
+        state.put("inWorld", true);
+        state.put("section", normalizedSection);
+        state.put("includeEmpty", includeEmpty);
+        state.put("selectedSlot", selectedSlot);
+        state.put("inventorySize", inventory.size());
+
+        List<Map<String, Object>> slots = new ArrayList<>();
+
+        if (normalizedSection.equals("offhand")) {
+            int index = 40;
+            if (index < inventory.size()) {
+                appendInventorySlot(slots, inventory.getStack(index), index, selectedSlot, includeEmpty);
+            }
+        } else if (normalizedSection.equals("armor")) {
+            for (int i = 36; i <= 39 && i < inventory.size(); i++) {
+                appendInventorySlot(slots, inventory.getStack(i), i, selectedSlot, includeEmpty);
+            }
+        } else if (normalizedSection.equals("hands")) {
+            state.put("mainHand", itemStack(player.getMainHandStack()));
+            state.put("offHand", itemStack(player.getOffHandStack()));
+        } else {
+            int[] range = resolveInventoryRange(normalizedSection, row, slotStart, slotEnd, selectedSlot, inventory.size());
+            state.put("slotRange", Map.of("start", range[0], "end", range[1]));
+            if (normalizedSection.equals("row")) {
+                state.put("row", Math.max(0, Math.min(2, row)));
+            }
+
+            for (int i = range[0]; i <= range[1] && i < inventory.size(); i++) {
+                appendInventorySlot(slots, inventory.getStack(i), i, selectedSlot, includeEmpty);
+            }
+        }
+
+        state.put("count", slots.size());
+        state.put("slots", slots);
         return state;
+    }
+
+    public Map<String, Object> getCrosshairTarget() {
+        return crosshairTarget();
     }
 
     public Map<String, Object> getNearbyEntities(double radius, int maxCount) {
@@ -190,17 +225,18 @@ public final class GameStateService {
         if (target == null) return Map.of("type", "none");
 
         Map<String, Object> map = new LinkedHashMap<>();
-        map.put("type", target.getType().name().toLowerCase());
+        HitResult.Type type = target.getType();
+        map.put("type", type.name().toLowerCase());
         map.put("position", vec(target.getPos()));
 
-        if (target instanceof BlockHitResult blockHitResult) {
+        if (type == HitResult.Type.BLOCK && target instanceof BlockHitResult blockHitResult) {
             BlockPos pos = blockHitResult.getBlockPos();
             map.put("blockPos", blockPos(pos));
             if (mc.world != null) {
                 BlockState blockState = mc.world.getBlockState(pos);
                 map.put("block", blockState.getBlock().getName().getString());
             }
-        } else if (target instanceof EntityHitResult entityHitResult) {
+        } else if (type == HitResult.Type.ENTITY && target instanceof EntityHitResult entityHitResult) {
             Entity entity = entityHitResult.getEntity();
             map.put("entityType", String.valueOf(Registries.ENTITY_TYPE.getId(entity.getType())));
             map.put("entityName", entity.getName().getString());
@@ -273,11 +309,102 @@ public final class GameStateService {
         return Map.of("x", pos.getX(), "y", pos.getY(), "z", pos.getZ());
     }
 
-    private int resolveSelectedSlot(ClientPlayerEntity player) {
-        try {
-            return (int) player.getInventory().getClass().getMethod("getSelectedSlot").invoke(player.getInventory());
-        } catch (Exception ignored) {
-            return -1;
+    private void appendInventorySlot(List<Map<String, Object>> slots, ItemStack stack, int slot, int selectedSlot, boolean includeEmpty) {
+        if (!includeEmpty && stack.isEmpty()) {
+            return;
         }
+
+        Map<String, Object> entry = new LinkedHashMap<>();
+        entry.put("slot", slot);
+        entry.put("container", inventoryContainer(slot));
+        entry.put("selected", slot == selectedSlot);
+
+        if (slot >= 0 && slot <= 8) {
+            entry.put("hotbarIndex", slot);
+        } else if (slot >= 9 && slot <= 35) {
+            int local = slot - 9;
+            entry.put("row", local / 9);
+            entry.put("column", local % 9);
+        }
+
+        entry.put("item", itemStack(stack));
+        slots.add(entry);
+    }
+
+    private String inventoryContainer(int slot) {
+        if (slot >= 0 && slot <= 8) return "hotbar";
+        if (slot >= 9 && slot <= 35) return "main";
+        if (slot >= 36 && slot <= 39) return "armor";
+        if (slot == 40) return "offhand";
+        return "unknown";
+    }
+
+    private String normalizeInventorySection(String section) {
+        if (section == null || section.isBlank()) return "all";
+
+        return switch (section.trim().toLowerCase()) {
+            case "all", "hotbar", "main", "inventory", "armor", "offhand", "hands", "row", "range", "selected" -> section.trim().toLowerCase();
+            case "storage" -> "main";
+            default -> "all";
+        };
+    }
+
+    private int[] resolveInventoryRange(String section, int row, int slotStart, int slotEnd, int selectedSlot, int inventorySize) {
+        int maxSlot = Math.max(0, inventorySize - 1);
+
+        return switch (section) {
+            case "hotbar" -> new int[]{0, Math.min(8, maxSlot)};
+            case "main" -> new int[]{Math.min(9, maxSlot), Math.min(35, maxSlot)};
+            case "inventory" -> new int[]{0, Math.min(35, maxSlot)};
+            case "selected" -> new int[]{Math.max(0, Math.min(selectedSlot, maxSlot)), Math.max(0, Math.min(selectedSlot, maxSlot))};
+            case "row" -> {
+                int clampedRow = Math.max(0, Math.min(2, row));
+                int start = 9 + clampedRow * 9;
+                int end = start + 8;
+                yield new int[]{Math.min(start, maxSlot), Math.min(end, maxSlot)};
+            }
+            case "range" -> {
+                int start = Math.max(0, Math.min(slotStart, maxSlot));
+                int end = Math.max(0, Math.min(slotEnd, maxSlot));
+                if (slotStart < 0 && slotEnd < 0) {
+                    yield new int[]{0, maxSlot};
+                }
+                if (slotStart < 0) {
+                    start = 0;
+                }
+                if (slotEnd < 0) {
+                    end = maxSlot;
+                }
+                if (start > end) {
+                    int temp = start;
+                    start = end;
+                    end = temp;
+                }
+                yield new int[]{start, end};
+            }
+            default -> new int[]{0, maxSlot};
+        };
+    }
+
+    private String resolveGameMode(ClientPlayerEntity player) {
+        if (mc.getNetworkHandler() == null) {
+            return "unknown";
+        }
+
+        PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(player.getUuid());
+        if (entry == null) {
+            return "unknown";
+        }
+
+        GameMode gameMode = entry.getGameMode();
+        if (gameMode == null) {
+            return "unknown";
+        }
+
+        return gameMode.getId();
+    }
+
+    private int resolveSelectedSlot(ClientPlayerEntity player) {
+        return player.getInventory().getSelectedSlot();
     }
 }

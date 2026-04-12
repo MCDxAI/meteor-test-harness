@@ -6,6 +6,11 @@ plugins {
     alias(libs.plugins.fabric.loom)
 }
 
+val yarnMappingsBundle by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
 fun DependencyHandlerScope.modInclude(dependencyProvider: Provider<out MinimalExternalModuleDependency>) {
     modImplementation(dependencyProvider)
     include(dependencyProvider)
@@ -33,6 +38,7 @@ dependencies {
     // Fabric + Minecraft
     minecraft(libs.minecraft)
     mappings(variantOf(libs.yarn) { classifier("v2") })
+    add(yarnMappingsBundle.name, variantOf(libs.yarn) { classifier("v2") })
     modImplementation(libs.fabric.loader)
 
     // Meteor
@@ -74,6 +80,11 @@ tasks {
 
         filesMatching("fabric.mod.json") {
             expand(propertyMap)
+        }
+
+        from({ zipTree(yarnMappingsBundle.singleFile) }) {
+            include("mappings/mappings.tiny")
+            rename { "yarn.tiny" }
         }
     }
 

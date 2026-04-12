@@ -27,7 +27,8 @@ Modules/settings:
 State streams:
 - `get_player_state`
 - `get_world_state`
-- `get_inventory_state`
+- `get_player_inventory`
+- `get_crosshair_target`
 - `get_nearby_entities`
 
 DOM tools:
@@ -57,7 +58,7 @@ Pathing:
 - `meteor://modules`
 - `meteor://state/player`
 - `meteor://state/world`
-- `meteor://state/inventory`
+- `meteor://state/crosshair`
 - `meteor://state/entities`
 - `meteor://state/pathing`
 - `meteor://state/screen-dom`

@@ -6,6 +6,7 @@ import com.mcdxai.meteortestharness.config.HarnessConfig;
 import com.mcdxai.meteortestharness.services.ChatLogService;
 import com.mcdxai.meteortestharness.services.GameStateService;
 import com.mcdxai.meteortestharness.services.ModuleService;
+import com.mcdxai.meteortestharness.services.NameMappingService;
 import com.mcdxai.meteortestharness.services.PathingService;
 import com.mcdxai.meteortestharness.services.ScreenDomService;
 import com.mcdxai.meteortestharness.services.SettingValueCodec;
@@ -22,7 +23,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.Text;
 
-import java.lang.reflect.Method;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -40,6 +41,7 @@ public final class HarnessMcpRegistry {
     private final SessionGate sessionGate;
 
     private final SettingValueCodec settingValueCodec;
+    private final NameMappingService nameMappingService;
     private final ModuleService moduleService;
     private final GameStateService gameStateService;
     private final ScreenDomService screenDomService;
@@ -51,9 +53,10 @@ public final class HarnessMcpRegistry {
         this.sessionGate = sessionGate;
 
         this.settingValueCodec = new SettingValueCodec();
+        this.nameMappingService = new NameMappingService();
         this.moduleService = new ModuleService(settingValueCodec);
         this.gameStateService = new GameStateService();
-        this.screenDomService = new ScreenDomService();
+        this.screenDomService = new ScreenDomService(nameMappingService);
         this.pathingService = new PathingService();
         this.chatLogService = chatLogService;
     }
@@ -179,14 +182,36 @@ public final class HarnessMcpRegistry {
             }
         ));
 
-        tools.add(tool("get_player_state", "Get current player state stream.", ToolSchemas.emptyObject(),
+        tools.add(tool("get_player_state", "Get core player state (position, vitals, movement flags, effects).", ToolSchemas.emptyObject(),
             (exchange, args) -> McpResults.ok(gameStateService.getPlayerState())));
 
         tools.add(tool("get_world_state", "Get current world state stream.", ToolSchemas.emptyObject(),
             (exchange, args) -> McpResults.ok(gameStateService.getWorldState())));
 
-        tools.add(tool("get_inventory_state", "Get current inventory state stream.", ToolSchemas.emptyObject(),
-            (exchange, args) -> McpResults.ok(gameStateService.getInventoryState())));
+        tools.add(tool(
+            "get_player_inventory",
+            "Get granular player inventory slices (hotbar/main/row/range/armor/offhand/hands/selected/all).",
+            ToolSchemas.object(
+                Map.of(
+                    "section", ToolSchemas.stringProperty("Inventory section: all, inventory, hotbar, main, row, range, selected, armor, offhand, hands."),
+                    "row", ToolSchemas.intProperty("Main inventory row index (0-2). Used when section=row."),
+                    "slot_start", ToolSchemas.intProperty("Start slot index. Used when section=range."),
+                    "slot_end", ToolSchemas.intProperty("End slot index. Used when section=range."),
+                    "include_empty", ToolSchemas.boolProperty("Include empty slots in slot results. Default false.")
+                ),
+                List.of()
+            ),
+            (exchange, args) -> McpResults.ok(gameStateService.getPlayerInventory(
+                args.string("section", "all"),
+                args.intValue("row", 0),
+                args.intValue("slot_start", -1),
+                args.intValue("slot_end", -1),
+                args.bool("include_empty", false)
+            ))
+        ));
+
+        tools.add(tool("get_crosshair_target", "Get the current crosshair hit target only.", ToolSchemas.emptyObject(),
+            (exchange, args) -> McpResults.ok(gameStateService.getCrosshairTarget())));
 
         tools.add(tool(
             "get_nearby_entities",
@@ -212,11 +237,24 @@ public final class HarnessMcpRegistry {
         tools.add(tool(
             "click_dom_element",
             "Click a DOM element by id.",
-            ToolSchemas.object(Map.of("element_id", ToolSchemas.stringProperty("Element id from get_screen_dom.")), List.of("element_id")),
+            ToolSchemas.object(
+                Map.of(
+                    "element_id", ToolSchemas.stringProperty("Element id from get_screen_dom."),
+                    "button", ToolSchemas.intProperty("Mouse button code. Default 0 (left click)."),
+                    "double_click", ToolSchemas.boolProperty("Whether to send click as double-click.")
+                ),
+                List.of("element_id")
+            ),
             (exchange, args) -> {
-                boolean success = screenDomService.click(args.string("element_id"));
-                if (!success) return McpResults.error("Element not found or not clickable.");
-                return McpResults.ok(screenDomService.snapshot());
+                Map<String, Object> interaction = screenDomService.clickDetailed(
+                    args.string("element_id"),
+                    args.intValue("button", 0),
+                    args.bool("double_click", false)
+                );
+                if (!interactionSuccess(interaction)) {
+                    return McpResults.error("Element not found or click was not handled.", domErrorDetails(interaction));
+                }
+                return McpResults.ok(withInteraction(interaction));
             }
         ));
 
@@ -226,14 +264,129 @@ public final class HarnessMcpRegistry {
             ToolSchemas.object(
                 Map.of(
                     "element_id", ToolSchemas.stringProperty("Element id from get_screen_dom."),
-                    "text", ToolSchemas.stringProperty("Text to set.")
+                    "text", ToolSchemas.stringProperty("Text to set."),
+                    "submit", ToolSchemas.boolProperty("Press Enter after setting text."),
+                    "type_characters", ToolSchemas.boolProperty("Type through char events instead of direct assignment."),
+                    "clear_first", ToolSchemas.boolProperty("Clear current text before typing.")
                 ),
                 List.of("element_id", "text")
             ),
             (exchange, args) -> {
-                boolean success = screenDomService.setText(args.string("element_id"), args.string("text", ""));
-                if (!success) return McpResults.error("Element does not accept text input.");
-                return McpResults.ok(screenDomService.snapshot());
+                Map<String, Object> interaction = screenDomService.setTextDetailed(
+                    args.string("element_id"),
+                    args.string("text", ""),
+                    args.bool("submit", false),
+                    args.bool("type_characters", false),
+                    args.bool("clear_first", true)
+                );
+                if (!interactionSuccess(interaction)) {
+                    return McpResults.error("Element does not accept text input.", domErrorDetails(interaction));
+                }
+                return McpResults.ok(withInteraction(interaction));
+            }
+        ));
+
+        tools.add(tool(
+            "type_dom_text",
+            "Type text into a DOM element through keyboard char events.",
+            ToolSchemas.object(
+                Map.of(
+                    "element_id", ToolSchemas.stringProperty("Element id from get_screen_dom."),
+                    "text", ToolSchemas.stringProperty("Text to type."),
+                    "clear_first", ToolSchemas.boolProperty("Clear existing text first. Default true."),
+                    "submit", ToolSchemas.boolProperty("Press Enter after typing.")
+                ),
+                List.of("element_id", "text")
+            ),
+            (exchange, args) -> {
+                Map<String, Object> interaction = screenDomService.typeTextDetailed(
+                    args.string("element_id"),
+                    args.string("text", ""),
+                    args.bool("clear_first", true),
+                    args.bool("submit", false)
+                );
+                if (!interactionSuccess(interaction)) {
+                    return McpResults.error("Typing failed for the selected element.", domErrorDetails(interaction));
+                }
+                return McpResults.ok(withInteraction(interaction));
+            }
+        ));
+
+        tools.add(tool(
+            "scroll_dom_element",
+            "Scroll at a DOM element location (or screen center if no element id is provided).",
+            ToolSchemas.object(
+                Map.of(
+                    "element_id", ToolSchemas.stringProperty("Optional element id from get_screen_dom."),
+                    "vertical", ToolSchemas.numberProperty("Vertical scroll amount. Positive/negative follows Minecraft screen semantics."),
+                    "horizontal", ToolSchemas.numberProperty("Horizontal scroll amount.")
+                ),
+                List.of()
+            ),
+            (exchange, args) -> {
+                Map<String, Object> interaction = screenDomService.scrollDetailed(
+                    args.string("element_id"),
+                    args.doubleValue("vertical", -1D),
+                    args.doubleValue("horizontal", 0D)
+                );
+                if (!interactionSuccess(interaction)) {
+                    return McpResults.error("Scroll was not handled.", domErrorDetails(interaction));
+                }
+                return McpResults.ok(withInteraction(interaction));
+            }
+        ));
+
+        tools.add(tool(
+            "drag_dom_element",
+            "Drag from the center of a DOM element by offsets.",
+            ToolSchemas.object(
+                Map.of(
+                    "element_id", ToolSchemas.stringProperty("Element id from get_screen_dom."),
+                    "offset_x", ToolSchemas.numberProperty("Drag offset on X axis in screen pixels."),
+                    "offset_y", ToolSchemas.numberProperty("Drag offset on Y axis in screen pixels."),
+                    "steps", ToolSchemas.intProperty("Number of drag interpolation steps. Default 8."),
+                    "button", ToolSchemas.intProperty("Mouse button code. Default 0 (left).")
+                ),
+                List.of("element_id", "offset_x", "offset_y")
+            ),
+            (exchange, args) -> {
+                Map<String, Object> interaction = screenDomService.dragDetailed(
+                    args.string("element_id"),
+                    args.doubleValue("offset_x", 0D),
+                    args.doubleValue("offset_y", 0D),
+                    args.intValue("steps", 8),
+                    args.intValue("button", 0)
+                );
+                if (!interactionSuccess(interaction)) {
+                    return McpResults.error("Drag was not handled.", domErrorDetails(interaction));
+                }
+                return McpResults.ok(withInteraction(interaction));
+            }
+        ));
+
+        tools.add(tool(
+            "press_screen_key",
+            "Send a key press/release to the active screen.",
+            ToolSchemas.object(
+                Map.of(
+                    "key", ToolSchemas.stringProperty("Key name (e.g. ENTER, ESCAPE, TAB, UP, A, F5)."),
+                    "modifiers", ToolSchemas.intProperty("Modifier bitmask. Default 0."),
+                    "repeat", ToolSchemas.intProperty("Number of keyPressed repeats. Default 1."),
+                    "release", ToolSchemas.boolProperty("Whether to send keyReleased after presses. Default true.")
+                ),
+                List.of("key")
+            ),
+            (exchange, args) -> {
+                Map<String, Object> interaction = screenDomService.pressKeyDetailed(
+                    args.string("key"),
+                    args.intValue("modifiers", 0),
+                    args.intValue("repeat", 1),
+                    args.bool("release", true)
+                );
+                if (!interactionSuccess(interaction)) {
+                    return McpResults.error("Key press was not handled.", domErrorDetails(interaction));
+                }
+                return McpResults.ok(withInteraction(interaction));
             }
         ));
 
@@ -248,9 +401,11 @@ public final class HarnessMcpRegistry {
                 List.of("element_id", "value")
             ),
             (exchange, args) -> {
-                boolean success = screenDomService.setValue(args.string("element_id"), args.raw("value"));
-                if (!success) return McpResults.error("Element does not support set_value.");
-                return McpResults.ok(screenDomService.snapshot());
+                Map<String, Object> interaction = screenDomService.setValueDetailed(args.string("element_id"), args.raw("value"));
+                if (!interactionSuccess(interaction)) {
+                    return McpResults.error("Element does not support set_value.", domErrorDetails(interaction));
+                }
+                return McpResults.ok(withInteraction(interaction));
             }
         ));
 
@@ -420,10 +575,10 @@ public final class HarnessMcpRegistry {
         ));
 
         resources.add(resource(
-            "meteor://state/inventory",
-            "Inventory State",
-            "Latest inventory snapshot.",
-            gameStateService::getInventoryState
+            "meteor://state/crosshair",
+            "Crosshair Target",
+            "Latest crosshair target snapshot.",
+            gameStateService::getCrosshairTarget
         ));
 
         resources.add(resource(
@@ -524,6 +679,25 @@ public final class HarnessMcpRegistry {
         ));
     }
 
+    private Map<String, Object> withInteraction(Map<String, Object> interaction) {
+        Map<String, Object> dom = new LinkedHashMap<>(screenDomService.snapshot());
+        dom.put("interaction", interaction);
+        dom.put("success", interactionSuccess(interaction));
+        return dom;
+    }
+
+    private Map<String, Object> domErrorDetails(Map<String, Object> interaction) {
+        Map<String, Object> details = new LinkedHashMap<>();
+        details.put("interaction", interaction);
+        details.put("dom", screenDomService.snapshot());
+        return details;
+    }
+
+    private boolean interactionSuccess(Map<String, Object> interaction) {
+        Object value = interaction.get("success");
+        return value instanceof Boolean booleanValue && booleanValue;
+    }
+
     private Map<String, Object> harnessStatus() {
         Map<String, Object> status = new LinkedHashMap<>();
         status.put("ownerSession", sessionGate.ownerSessionId());
@@ -533,7 +707,28 @@ public final class HarnessMcpRegistry {
         status.put("mcpEndpoint", config.mcpEndpoint.get());
         status.put("inWorld", mc.world != null);
         status.put("hasPlayer", mc.player != null);
-        status.put("currentScreen", mc.currentScreen == null ? null : mc.currentScreen.getClass().getName());
+        status.put("mappingRuntimeNamespace", nameMappingService.getRuntimeNamespace());
+        status.put("mappingPreferredNamespace", nameMappingService.getPreferredNamespace());
+        status.put("mappingMode", nameMappingService.getMappingMode());
+        status.put("mappingNamespaces", nameMappingService.getNamespaces());
+        status.put("mappingRuntimeNamedAvailable", nameMappingService.hasRuntimeNamedMappings());
+        status.put("mappingBundledNamedAvailable", nameMappingService.hasBundledNamedMappings());
+        status.put("mappingBundledNamedClassCount", nameMappingService.getBundledNamedClassCount());
+
+        Screen currentScreen = mc.currentScreen;
+        if (currentScreen == null) {
+            status.put("currentScreen", null);
+            status.put("currentScreenMapped", null);
+            status.put("currentScreenType", null);
+            status.put("currentScreenTypeMapped", null);
+        } else {
+            String rawClass = currentScreen.getClass().getName();
+            String mappedClass = nameMappingService.mapClassName(rawClass);
+            status.put("currentScreen", rawClass);
+            status.put("currentScreenMapped", mappedClass);
+            status.put("currentScreenType", nameMappingService.simpleName(rawClass));
+            status.put("currentScreenTypeMapped", nameMappingService.simpleName(mappedClass));
+        }
 
         return status;
     }
@@ -556,32 +751,11 @@ public final class HarnessMcpRegistry {
             }
         }
 
-        invokeDisconnectReflection();
+        invokeDisconnect();
     }
 
-    private void invokeDisconnectReflection() {
-        try {
-            Method noArg = mc.getClass().getMethod("disconnect");
-            noArg.invoke(mc);
-            return;
-        } catch (Exception ignored) {
-            // Try overloaded signatures.
-        }
-
-        try {
-            Method oneArg = mc.getClass().getMethod("disconnect", Screen.class);
-            oneArg.invoke(mc, new TitleScreen());
-            return;
-        } catch (Exception ignored) {
-            // Try overloaded signatures.
-        }
-
-        try {
-            Method threeArgs = mc.getClass().getMethod("disconnect", Screen.class, boolean.class, boolean.class);
-            threeArgs.invoke(mc, new TitleScreen(), false, false);
-        } catch (Exception ignored) {
-            // Last resort: no-op.
-        }
+    private void invokeDisconnect() {
+        mc.disconnect(new TitleScreen(), false, false);
     }
 
     @FunctionalInterface
