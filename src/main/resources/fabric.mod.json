@@ -18,7 +18,9 @@
       "com.mcdxai.meteortestharness.MeteorTestHarnessAddon"
     ]
   },
-  "mixins": [],
+  "mixins": [
+    "meteor-test-harness.mixins.json"
+  ],
   "custom": {
     "meteor-client:color": "120,210,120"
   },

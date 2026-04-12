@@ -67,6 +67,9 @@ public final class HarnessMcpRegistry {
         tools.add(tool("get_harness_status", "Get harness runtime/session status.", ToolSchemas.emptyObject(),
             (exchange, args) -> McpResults.ok(harnessStatus())));
 
+        tools.add(tool("get_harness_debug_info", "Get harness diagnostics (mapping/input internals).", ToolSchemas.emptyObject(),
+            (exchange, args) -> McpResults.ok(harnessDebugInfo())));
+
         tools.add(tool("release_session", "Release current session ownership lock.", ToolSchemas.emptyObject(),
             (exchange, args) -> {
                 sessionGate.release(exchange.sessionId());
@@ -235,12 +238,163 @@ public final class HarnessMcpRegistry {
             (exchange, args) -> McpResults.ok(screenDomService.snapshot())));
 
         tools.add(tool(
+            "get_screen_dom_summary",
+            "Get a compact summary for the current or latest DOM snapshot.",
+            ToolSchemas.object(
+                Map.of("refresh", ToolSchemas.boolProperty("Capture a fresh snapshot before summarizing. Default true.")),
+                List.of()
+            ),
+            (exchange, args) -> McpResults.ok(screenDomService.snapshotSummary(args.bool("refresh", true)))
+        ));
+
+        tools.add(tool(
+            "find_dom_elements",
+            "Query DOM elements server-side using filters and return only matched records.",
+            ToolSchemas.object(
+                Map.of(
+                    "snapshot_id", ToolSchemas.stringProperty("Optional snapshot id from get_screen_dom."),
+                    "filters", ToolSchemas.objectProperty("Filter object (label/moduleName/role/actions/text/etc)."),
+                    "limit", ToolSchemas.intProperty("Maximum matched elements to return. Default 32."),
+                    "fields", ToolSchemas.arrayProperty("Optional field whitelist for each returned element."),
+                    "include_children", ToolSchemas.boolProperty("Include children/subtrees for each result.")
+                ),
+                List.of()
+            ),
+            (exchange, args) -> {
+                Map<String, Object> result = screenDomService.findElements(
+                    args.string("snapshot_id"),
+                    args.object("filters"),
+                    args.intValue("limit", 32),
+                    args.list("fields"),
+                    args.bool("include_children", false)
+                );
+
+                if (!resultOk(result)) {
+                    return McpResults.error(String.valueOf(result.getOrDefault("reason", "dom_query_failed")), result);
+                }
+                return McpResults.ok(result);
+            }
+        ));
+
+        tools.add(tool(
+            "get_dom_element",
+            "Get one DOM element by id from a snapshot (or latest snapshot).",
+            ToolSchemas.object(
+                Map.of(
+                    "snapshot_id", ToolSchemas.stringProperty("Optional snapshot id from get_screen_dom."),
+                    "element_id", ToolSchemas.stringProperty("Element id."),
+                    "fields", ToolSchemas.arrayProperty("Optional field whitelist for returned element."),
+                    "include_children", ToolSchemas.boolProperty("Include nested children for this element.")
+                ),
+                List.of("element_id")
+            ),
+            (exchange, args) -> {
+                Map<String, Object> result = screenDomService.getElement(
+                    args.string("snapshot_id"),
+                    args.string("element_id"),
+                    args.list("fields"),
+                    args.bool("include_children", false)
+                );
+
+                if (!resultOk(result)) {
+                    return McpResults.error(String.valueOf(result.getOrDefault("reason", "dom_element_not_found")), result);
+                }
+                return McpResults.ok(result);
+            }
+        ));
+
+        tools.add(tool(
+            "get_dom_subtree",
+            "Get an element subtree by id with bounded depth.",
+            ToolSchemas.object(
+                Map.of(
+                    "snapshot_id", ToolSchemas.stringProperty("Optional snapshot id from get_screen_dom."),
+                    "element_id", ToolSchemas.stringProperty("Root element id."),
+                    "depth", ToolSchemas.intProperty("Child depth to include. Default 2."),
+                    "fields", ToolSchemas.arrayProperty("Optional field whitelist for nodes in the subtree.")
+                ),
+                List.of("element_id")
+            ),
+            (exchange, args) -> {
+                Map<String, Object> result = screenDomService.getSubtree(
+                    args.string("snapshot_id"),
+                    args.string("element_id"),
+                    args.intValue("depth", 2),
+                    args.list("fields")
+                );
+
+                if (!resultOk(result)) {
+                    return McpResults.error(String.valueOf(result.getOrDefault("reason", "dom_subtree_not_found")), result);
+                }
+                return McpResults.ok(result);
+            }
+        ));
+
+        tools.add(tool(
+            "click_dom_query",
+            "Find a DOM element with filters and click it atomically.",
+            ToolSchemas.object(
+                Map.of(
+                    "filters", ToolSchemas.objectProperty("Filter object used to select element(s)."),
+                    "index", ToolSchemas.intProperty("Match index to click. Default 0."),
+                    "button", ToolSchemas.intProperty("Mouse button code. 0=left, 1=right, 2=middle. Default 0."),
+                    "double_click", ToolSchemas.boolProperty("Whether to send click as double-click.")
+                ),
+                List.of("filters")
+            ),
+            (exchange, args) -> {
+                Map<String, Object> result = screenDomService.clickByQueryDetailed(
+                    args.object("filters"),
+                    args.intValue("index", 0),
+                    args.intValue("button", 0),
+                    args.bool("double_click", false)
+                );
+
+                if (!resultOk(result)) {
+                    return McpResults.error(String.valueOf(result.getOrDefault("reason", "dom_query_click_failed")), result);
+                }
+                return McpResults.ok(result);
+            }
+        ));
+
+        tools.add(tool(
+            "set_dom_text_query",
+            "Find a DOM text-capable element with filters and set text atomically.",
+            ToolSchemas.object(
+                Map.of(
+                    "filters", ToolSchemas.objectProperty("Filter object used to select element(s)."),
+                    "text", ToolSchemas.stringProperty("Text to apply."),
+                    "index", ToolSchemas.intProperty("Match index. Default 0."),
+                    "submit", ToolSchemas.boolProperty("Press Enter after setting text."),
+                    "type_characters", ToolSchemas.boolProperty("Type through char events instead of direct assignment."),
+                    "clear_first", ToolSchemas.boolProperty("Clear current text before typing.")
+                ),
+                List.of("filters", "text")
+            ),
+            (exchange, args) -> {
+                Map<String, Object> result = screenDomService.setTextByQueryDetailed(
+                    args.object("filters"),
+                    args.intValue("index", 0),
+                    args.string("text", ""),
+                    args.bool("submit", false),
+                    args.bool("type_characters", false),
+                    args.bool("clear_first", true)
+                );
+
+                if (!resultOk(result)) {
+                    return McpResults.error(String.valueOf(result.getOrDefault("reason", "dom_query_set_text_failed")), result);
+                }
+                return McpResults.ok(result);
+            }
+        ));
+
+        tools.add(tool(
             "click_dom_element",
             "Click a DOM element by id.",
             ToolSchemas.object(
                 Map.of(
                     "element_id", ToolSchemas.stringProperty("Element id from get_screen_dom."),
-                    "button", ToolSchemas.intProperty("Mouse button code. Default 0 (left click)."),
+                    "button", ToolSchemas.intProperty("Mouse button code. 0=left, 1=right, 2=middle. Default 0."),
                     "double_click", ToolSchemas.boolProperty("Whether to send click as double-click.")
                 ),
                 List.of("element_id")
@@ -698,6 +852,11 @@ public final class HarnessMcpRegistry {
         return value instanceof Boolean booleanValue && booleanValue;
     }
 
+    private boolean resultOk(Map<String, Object> result) {
+        Object value = result.get("success");
+        return value instanceof Boolean booleanValue && booleanValue;
+    }
+
     private Map<String, Object> harnessStatus() {
         Map<String, Object> status = new LinkedHashMap<>();
         status.put("ownerSession", sessionGate.ownerSessionId());
@@ -707,15 +866,6 @@ public final class HarnessMcpRegistry {
         status.put("mcpEndpoint", config.mcpEndpoint.get());
         status.put("inWorld", mc.world != null);
         status.put("hasPlayer", mc.player != null);
-        status.put("mappingRuntimeNamespace", nameMappingService.getRuntimeNamespace());
-        status.put("mappingPreferredNamespace", nameMappingService.getPreferredNamespace());
-        status.put("mappingMode", nameMappingService.getMappingMode());
-        status.put("mappingNamespaces", nameMappingService.getNamespaces());
-        status.put("mappingRuntimeNamedAvailable", nameMappingService.hasRuntimeNamedMappings());
-        status.put("mappingBundledNamedAvailable", nameMappingService.hasBundledNamedMappings());
-        status.put("mappingBundledNamedClassCount", nameMappingService.getBundledNamedClassCount());
-        status.put("mappingBundledSource", nameMappingService.getBundledMappingsSource());
-        status.put("mappingBundledError", nameMappingService.getBundledMappingsError());
 
         Screen currentScreen = mc.currentScreen;
         if (currentScreen == null) {
@@ -733,6 +883,38 @@ public final class HarnessMcpRegistry {
         }
 
         return status;
+    }
+
+    private Map<String, Object> harnessDebugInfo() {
+        Map<String, Object> debug = new LinkedHashMap<>();
+        debug.put("mappingRuntimeNamespace", nameMappingService.getRuntimeNamespace());
+        debug.put("mappingPreferredNamespace", nameMappingService.getPreferredNamespace());
+        debug.put("mappingMode", nameMappingService.getMappingMode());
+        debug.put("mappingNamespaces", nameMappingService.getNamespaces());
+        debug.put("mappingRuntimeNamedAvailable", nameMappingService.hasRuntimeNamedMappings());
+        debug.put("mappingBundledNamedAvailable", nameMappingService.hasBundledNamedMappings());
+        debug.put("mappingBundledNamedClassCount", nameMappingService.getBundledNamedClassCount());
+        debug.put("mappingBundledSource", nameMappingService.getBundledMappingsSource());
+        debug.put("mappingBundledError", nameMappingService.getBundledMappingsError());
+        debug.put("inputKeySimulationMode", "screen_and_global");
+        debug.put("inputKeyDispatchMode", "keyboard_onKey");
+
+        Screen currentScreen = mc.currentScreen;
+        if (currentScreen == null) {
+            debug.put("currentScreen", null);
+            debug.put("currentScreenMapped", null);
+            debug.put("currentScreenType", null);
+            debug.put("currentScreenTypeMapped", null);
+        } else {
+            String rawClass = currentScreen.getClass().getName();
+            String mappedClass = nameMappingService.mapClassName(rawClass);
+            debug.put("currentScreen", rawClass);
+            debug.put("currentScreenMapped", mappedClass);
+            debug.put("currentScreenType", nameMappingService.simpleName(rawClass));
+            debug.put("currentScreenTypeMapped", nameMappingService.simpleName(mappedClass));
+        }
+
+        return debug;
     }
 
     private static String toJson(Object value) {

@@ -20,12 +20,14 @@ public final class HarnessConfig extends System<HarnessConfig> {
         .name("auto-start")
         .description("Automatically start the MCP HTTP server when Meteor initializes.")
         .defaultValue(true)
+        .onChanged(HarnessConfigRuntimeApplier::onAutoStartChanged)
         .build());
 
     public final Setting<String> bindHost = sgNetwork.add(new StringSetting.Builder()
         .name("bind-host")
         .description("Host/IP to bind the embedded MCP HTTP server to.")
         .defaultValue("127.0.0.1")
+        .onChanged(value -> HarnessConfigRuntimeApplier.onServerRestartSettingChanged())
         .build());
 
     public final Setting<Integer> bindPort = sgNetwork.add(new IntSetting.Builder()
@@ -35,12 +37,14 @@ public final class HarnessConfig extends System<HarnessConfig> {
         .min(1024)
         .max(65535)
         .sliderRange(1024, 65535)
+        .onChanged(value -> HarnessConfigRuntimeApplier.onServerRestartSettingChanged())
         .build());
 
     public final Setting<String> mcpEndpoint = sgNetwork.add(new StringSetting.Builder()
         .name("mcp-endpoint")
         .description("HTTP endpoint path exposed by the MCP server.")
         .defaultValue("/mcp")
+        .onChanged(value -> HarnessConfigRuntimeApplier.onServerRestartSettingChanged())
         .build());
 
     public final Setting<Integer> keepAliveSeconds = sgNetwork.add(new IntSetting.Builder()
@@ -50,6 +54,7 @@ public final class HarnessConfig extends System<HarnessConfig> {
         .min(5)
         .max(300)
         .sliderRange(5, 120)
+        .onChanged(value -> HarnessConfigRuntimeApplier.onServerRestartSettingChanged())
         .build());
 
     public final Setting<Integer> requestTimeoutSeconds = sgNetwork.add(new IntSetting.Builder()
@@ -59,12 +64,14 @@ public final class HarnessConfig extends System<HarnessConfig> {
         .min(5)
         .max(300)
         .sliderRange(5, 120)
+        .onChanged(value -> HarnessConfigRuntimeApplier.onServerRestartSettingChanged())
         .build());
 
     public final Setting<Boolean> singleSessionMode = sgBehavior.add(new BoolSetting.Builder()
         .name("single-session-mode")
         .description("Allow one active MCP session owner at a time.")
-        .defaultValue(true)
+        .defaultValue(false)
+        .onChanged(value -> HarnessConfigRuntimeApplier.onSaveOnlySettingChanged())
         .build());
 
     public final Setting<Integer> chatHistoryLimit = sgBehavior.add(new IntSetting.Builder()
@@ -74,6 +81,7 @@ public final class HarnessConfig extends System<HarnessConfig> {
         .min(20)
         .max(2000)
         .sliderRange(50, 500)
+        .onChanged(value -> HarnessConfigRuntimeApplier.onServerRestartSettingChanged())
         .build());
 
     public HarnessConfig() {

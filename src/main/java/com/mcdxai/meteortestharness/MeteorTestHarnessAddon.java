@@ -1,8 +1,10 @@
 package com.mcdxai.meteortestharness;
 
 import com.mcdxai.meteortestharness.config.HarnessConfig;
+import com.mcdxai.meteortestharness.gui.HarnessTab;
 import meteordevelopment.meteorclient.addons.GithubRepo;
 import meteordevelopment.meteorclient.addons.MeteorAddon;
+import meteordevelopment.meteorclient.gui.tabs.Tabs;
 import meteordevelopment.meteorclient.systems.Systems;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +19,7 @@ public class MeteorTestHarnessAddon extends MeteorAddon {
         LOG.info("Initializing Meteor Test Harness addon.");
 
         Systems.add(new HarnessConfig());
+        Tabs.add(new HarnessTab());
 
         runtime = new HarnessRuntime();
         runtime.initialize();

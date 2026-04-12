@@ -58,7 +58,7 @@ public final class ScreenDomActionHints {
         return element instanceof AlwaysSelectedEntryListWidget.Entry<?> && owningList != null;
     }
 
-    public static void addMeteorHints(Map<String, Object> mapped, WWidget widget, double w, double h) {
+    public static void addMeteorHints(Map<String, Object> mapped, WWidget widget, double w, double h, boolean moduleWidget) {
         List<String> actions = new ArrayList<>();
         boolean hasCoordinates = !Double.isNaN(w) && !Double.isNaN(h) && w > 0 && h > 0;
 
@@ -78,6 +78,10 @@ public final class ScreenDomActionHints {
         }
         if (widget instanceof WSlider) {
             actions.add("drag");
+        }
+        if (moduleWidget && clickable) {
+            actions.add("click_secondary");
+            actions.add("open_module_settings");
         }
 
         mapped.put("clickable", clickable);
