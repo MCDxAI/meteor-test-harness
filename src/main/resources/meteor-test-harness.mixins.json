@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.mcdxai.meteortestharness.mixin",
+  "package": "io.mcdxai.harness.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "KeyboardInvoker"

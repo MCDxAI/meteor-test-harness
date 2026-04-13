@@ -15,7 +15,7 @@
   "environment": "client",
   "entrypoints": {
     "meteor": [
-      "com.mcdxai.meteortestharness.MeteorTestHarnessAddon"
+      "io.mcdxai.harness.MeteorTestHarnessAddon"
     ]
   },
   "mixins": [
