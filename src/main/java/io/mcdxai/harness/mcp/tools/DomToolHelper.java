@@ -1,4 +1,4 @@
-package io.mcdxai.harness.mcp;
+package io.mcdxai.harness.mcp.tools;
 
 import io.mcdxai.harness.services.ScreenDomService;
 

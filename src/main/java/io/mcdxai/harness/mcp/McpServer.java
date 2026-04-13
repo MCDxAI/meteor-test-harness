@@ -3,7 +3,6 @@ package io.mcdxai.harness.mcp;
 import io.mcdxai.harness.MeteorTestHarnessAddon;
 import io.mcdxai.harness.config.HarnessConfig;
 import io.mcdxai.harness.services.ChatLogService;
-import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpSyncServer;
 import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTransportProvider;
 import org.apache.catalina.Context;
@@ -17,12 +16,12 @@ import java.time.Duration;
 
 import static meteordevelopment.meteorclient.MeteorClient.EVENT_BUS;
 
-public final class McpHarnessServer {
+public final class McpServer {
     private final HarnessConfig config;
     private final SessionGate sessionGate;
 
     private ChatLogService chatLogService;
-    private HarnessMcpRegistry registry;
+    private McpRegistry registry;
 
     private HttpServletStreamableServerTransportProvider transportProvider;
     private McpSyncServer mcpServer;
@@ -30,7 +29,7 @@ public final class McpHarnessServer {
 
     private volatile boolean running;
 
-    public McpHarnessServer(HarnessConfig config) {
+    public McpServer(HarnessConfig config) {
         this.config = config;
         this.sessionGate = new SessionGate();
     }
@@ -51,9 +50,9 @@ public final class McpHarnessServer {
                 .keepAliveInterval(Duration.ofSeconds(config.keepAliveSeconds.get()))
                 .build();
 
-            registry = new HarnessMcpRegistry(config, sessionGate, chatLogService);
+            registry = new McpRegistry(config, sessionGate, chatLogService);
 
-            mcpServer = McpServer.sync(transportProvider)
+            mcpServer = io.modelcontextprotocol.server.McpServer.sync(transportProvider)
                 .serverInfo("meteor-test-harness", "0.1.0")
                 .instructions("Local singleplayer Meteor test harness. Use DOM tools for all UI interactions.")
                 .tools(registry.tools())

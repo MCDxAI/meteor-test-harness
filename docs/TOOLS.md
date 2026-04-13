@@ -2,7 +2,7 @@
 
 > Complete reference for all tools exposed by the Meteor Test Harness MCP server.
 >
-> **40 tools** across 6 registration files. Organized by functional domain.
+> **43 tools** across 7 registration files. Organized by functional domain.
 
 ---
 
@@ -45,6 +45,51 @@ Release current session ownership lock.
 | — | — | — | No arguments. |
 
 **Source:** `HarnessCoreTools.java:19-23`
+
+---
+
+## Meteor Info
+
+> Meteor Client environment, addon introspection, and HUD state.
+>
+> **Source:** `tools/MeteorInfoTools.java`
+
+### `get_meteor_info`
+
+Get Meteor Client environment: version, build, Baritone status, installed addons, module/HUD counts.
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| — | — | — | No arguments. |
+
+---
+
+### `list_addon_features`
+
+List modules and HUD element types per addon. Omit addon_name for all addons.
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| `addon_name` | string | No | Addon name to filter. Omit for all. |
+
+---
+
+### `get_active_hud`
+
+Get active HUD element instances currently shown on screen with positions. Text elements include evaluated value output. Returns disabled message if HUD is off.
+
+| Argument | Type | Required | Description |
+|----------|------|----------|-------------|
+| — | — | — | No arguments. |
+
+Response notes:
+- Returns only active HUD elements (inactive elements are omitted).
+- `elementCount` matches the number of returned active elements.
+- Each element includes `type`, `x`, `y`, `width`, `height`.
+- `value` is included when available.
+- For `type: "text"`, `value` is evaluated Starscript output (for example `FPS: 30`).
+- For `type: "active-modules"`, `value` is a list of active module display strings.
+- Legacy `title` and `active` fields are not returned.
 
 ---
 
@@ -578,12 +623,13 @@ Stop current pathing process.
 | Group | Tools | Source File |
 |-------|-------|-------------|
 | Core & Session | 3 | `HarnessCoreTools.java` |
+| Meteor Info | 3 | `MeteorInfoTools.java` |
 | Screen DOM | 15 | `HarnessDomTools.java` |
 | Module Management | 6 | `HarnessModuleTools.java` |
 | World State | 5 | `HarnessWorldStateTools.java` |
 | World Actions | 5 | `HarnessWorldActionTools.java` |
 | Pathing | 6 | `HarnessPathingTools.java` |
-| **Total** | **40** | — |
+| **Total** | **43** | — |
 
 All source files are under `src/main/java/com/mcdxai/meteortestharness/mcp/`.
 

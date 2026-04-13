@@ -1,5 +1,7 @@
-package io.mcdxai.harness.mcp;
+package io.mcdxai.harness.mcp.tools;
 
+import io.mcdxai.harness.mcp.RegistryContext;
+import io.mcdxai.harness.mcp.ToolSchemas;
 import io.mcdxai.harness.services.ModuleService;
 import io.mcdxai.harness.util.McpResults;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -8,18 +10,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-final class HarnessModuleTools {
-    private HarnessModuleTools() {
+public final class ModuleTools {
+    private ModuleTools() {
     }
 
-    static void register(List<McpServerFeatures.SyncToolSpecification> tools, HarnessRegistryContext context) {
+    public static void register(List<McpServerFeatures.SyncToolSpecification> tools, RegistryContext context) {
         ModuleService moduleService = context.moduleService();
 
         tools.add(context.tool(
             "list_modules",
             "List all Meteor and addon modules.",
             ToolSchemas.object(
-                Map.of("include_settings", ToolSchemas.boolProperty("Include each module's full settings tree.")),
+                Map.of("include_settings", ToolSchemas.boolProperty("Include full settings tree per module. Default false.")),
                 List.of()
             ),
             (exchange, args) -> McpResults.ok(Map.of("modules", moduleService.listModules(args.bool("include_settings", false))))
@@ -27,11 +29,11 @@ final class HarnessModuleTools {
 
         tools.add(context.tool(
             "get_module",
-            "Get one module and optionally its settings.",
+            "Get one module by name.",
             ToolSchemas.object(
                 Map.of(
-                    "module_name", ToolSchemas.stringProperty("Module name/title."),
-                    "include_settings", ToolSchemas.boolProperty("Include settings tree.")
+                    "module_name", ToolSchemas.stringProperty("Module name or title."),
+                    "include_settings", ToolSchemas.boolProperty("Include settings tree. Default true.")
                 ),
                 List.of("module_name")
             ),
@@ -47,7 +49,7 @@ final class HarnessModuleTools {
             "Enable or disable a module.",
             ToolSchemas.object(
                 Map.of(
-                    "module_name", ToolSchemas.stringProperty("Module name/title."),
+                    "module_name", ToolSchemas.stringProperty("Module name or title."),
                     "active", ToolSchemas.boolProperty("Desired active state.")
                 ),
                 List.of("module_name", "active")
@@ -67,7 +69,7 @@ final class HarnessModuleTools {
             "list_module_settings",
             "List settings for a module.",
             ToolSchemas.object(
-                Map.of("module_name", ToolSchemas.stringProperty("Module name/title.")),
+                Map.of("module_name", ToolSchemas.stringProperty("Module name or title.")),
                 List.of("module_name")
             ),
             (exchange, args) -> {
@@ -82,8 +84,8 @@ final class HarnessModuleTools {
             "Get one setting from a module.",
             ToolSchemas.object(
                 Map.of(
-                    "module_name", ToolSchemas.stringProperty("Module name/title."),
-                    "setting_name", ToolSchemas.stringProperty("Setting name/title.")
+                    "module_name", ToolSchemas.stringProperty("Module name or title."),
+                    "setting_name", ToolSchemas.stringProperty("Setting name or title.")
                 ),
                 List.of("module_name", "setting_name")
             ),
@@ -103,9 +105,9 @@ final class HarnessModuleTools {
             "Set one module setting value.",
             ToolSchemas.object(
                 Map.of(
-                    "module_name", ToolSchemas.stringProperty("Module name/title."),
-                    "setting_name", ToolSchemas.stringProperty("Setting name/title."),
-                    "value", Map.of("description", "New value. Scalars/maps/lists supported depending on setting type.")
+                    "module_name", ToolSchemas.stringProperty("Module name or title."),
+                    "setting_name", ToolSchemas.stringProperty("Setting name or title."),
+                    "value", Map.of("description", "New value. Type depends on setting (string/number/boolean/list/map).")
                 ),
                 List.of("module_name", "setting_name", "value")
             ),

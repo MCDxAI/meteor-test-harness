@@ -1,14 +1,15 @@
-package io.mcdxai.harness.mcp;
+package io.mcdxai.harness.mcp.tools;
 
+import io.mcdxai.harness.mcp.RegistryContext;
 import io.modelcontextprotocol.server.McpServerFeatures;
 
 import java.util.List;
 
-final class HarnessResources {
-    private HarnessResources() {
+public final class Resources {
+    private Resources() {
     }
 
-    static void register(List<McpServerFeatures.SyncResourceSpecification> resources, HarnessRegistryContext context) {
+    public static void register(List<McpServerFeatures.SyncResourceSpecification> resources, RegistryContext context) {
         resources.add(context.resource(
             "meteor://modules",
             "Meteor Module Schema",

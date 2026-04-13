@@ -1,5 +1,7 @@
-package io.mcdxai.harness.mcp;
+package io.mcdxai.harness.mcp.tools;
 
+import io.mcdxai.harness.mcp.RegistryContext;
+import io.mcdxai.harness.mcp.ToolSchemas;
 import io.mcdxai.harness.services.ScreenDomService;
 import io.mcdxai.harness.util.McpResults;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -7,22 +9,22 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import java.util.List;
 import java.util.Map;
 
-final class HarnessDomQueryTools {
-    private HarnessDomQueryTools() {
+public final class DomQueryTools {
+    private DomQueryTools() {
     }
 
-    static void register(List<McpServerFeatures.SyncToolSpecification> tools, HarnessRegistryContext context) {
+    public static void register(List<McpServerFeatures.SyncToolSpecification> tools, RegistryContext context) {
         ScreenDomService domService = context.screenDomService();
         DomToolHelper helper = new DomToolHelper(domService);
 
-        tools.add(context.tool("get_screen_dom", "Get current DOM tree for active screen.", ToolSchemas.emptyObject(),
+        tools.add(context.tool("get_screen_dom", "Get full DOM tree for active screen.", ToolSchemas.emptyObject(),
             (exchange, args) -> McpResults.ok(domService.snapshot())));
 
         tools.add(context.tool(
             "get_screen_dom_summary",
-            "Get a compact summary for the current or latest DOM snapshot.",
+            "Get a compact summary of the current screen DOM.",
             ToolSchemas.object(
-                Map.of("refresh", ToolSchemas.boolProperty("Capture a fresh snapshot before summarizing. Default true.")),
+                Map.of("refresh", ToolSchemas.boolProperty("Take fresh snapshot first. Default true.")),
                 List.of()
             ),
             (exchange, args) -> McpResults.ok(domService.snapshotSummary(args.bool("refresh", true)))
@@ -30,14 +32,14 @@ final class HarnessDomQueryTools {
 
         tools.add(context.tool(
             "find_dom_elements",
-            "Query DOM elements server-side using filters and return only matched records.",
+            "Query DOM elements by filters.",
             ToolSchemas.object(
                 Map.of(
-                    "snapshot_id", ToolSchemas.stringProperty("Optional snapshot id from get_screen_dom."),
-                    "filters", ToolSchemas.objectProperty("Filter object (label/moduleName/role/actions/text/etc)."),
-                    "limit", ToolSchemas.intProperty("Maximum matched elements to return. Default 32."),
-                    "fields", ToolSchemas.arrayProperty("Optional field whitelist for each returned element."),
-                    "include_children", ToolSchemas.boolProperty("Include children/subtrees for each result.")
+                    "snapshot_id", ToolSchemas.stringProperty("Snapshot id. Omit for latest."),
+                    "filters", ToolSchemas.objectProperty("Filter object. Keys: label, text, role, actions, moduleName, type."),
+                    "limit", ToolSchemas.intProperty("Max elements to return. Default 32."),
+                    "fields", ToolSchemas.arrayProperty("Field whitelist for returned elements."),
+                    "include_children", ToolSchemas.boolProperty("Include child elements. Default false.")
                 ),
                 List.of()
             ),
@@ -59,13 +61,13 @@ final class HarnessDomQueryTools {
 
         tools.add(context.tool(
             "get_dom_element",
-            "Get one DOM element by id from a snapshot (or latest snapshot).",
+            "Get one DOM element by id.",
             ToolSchemas.object(
                 Map.of(
-                    "snapshot_id", ToolSchemas.stringProperty("Optional snapshot id from get_screen_dom."),
+                    "snapshot_id", ToolSchemas.stringProperty("Snapshot id. Omit for latest."),
                     "element_id", ToolSchemas.stringProperty("Element id."),
-                    "fields", ToolSchemas.arrayProperty("Optional field whitelist for returned element."),
-                    "include_children", ToolSchemas.boolProperty("Include nested children for this element.")
+                    "fields", ToolSchemas.arrayProperty("Field whitelist for returned element."),
+                    "include_children", ToolSchemas.boolProperty("Include child elements. Default false.")
                 ),
                 List.of("element_id")
             ),
@@ -89,10 +91,10 @@ final class HarnessDomQueryTools {
             "Get an element subtree by id with bounded depth.",
             ToolSchemas.object(
                 Map.of(
-                    "snapshot_id", ToolSchemas.stringProperty("Optional snapshot id from get_screen_dom."),
+                    "snapshot_id", ToolSchemas.stringProperty("Snapshot id. Omit for latest."),
                     "element_id", ToolSchemas.stringProperty("Root element id."),
                     "depth", ToolSchemas.intProperty("Child depth to include. Default 2."),
-                    "fields", ToolSchemas.arrayProperty("Optional field whitelist for nodes in the subtree.")
+                    "fields", ToolSchemas.arrayProperty("Field whitelist for subtree nodes.")
                 ),
                 List.of("element_id")
             ),

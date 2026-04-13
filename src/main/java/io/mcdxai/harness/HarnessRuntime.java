@@ -1,14 +1,14 @@
 package io.mcdxai.harness;
 
 import io.mcdxai.harness.config.HarnessConfig;
-import io.mcdxai.harness.mcp.McpHarnessServer;
+import io.mcdxai.harness.mcp.McpServer;
 
 public final class HarnessRuntime {
-    private McpHarnessServer server;
+    private McpServer server;
 
     public void initialize() {
         HarnessConfig config = HarnessConfig.get();
-        this.server = new McpHarnessServer(config);
+        this.server = new McpServer(config);
 
         if (config.autoStart.get()) {
             startServer();
@@ -17,7 +17,7 @@ public final class HarnessRuntime {
 
     public synchronized boolean startServer() {
         if (server == null) {
-            server = new McpHarnessServer(HarnessConfig.get());
+            server = new McpServer(HarnessConfig.get());
         }
 
         return server.start();
@@ -38,7 +38,7 @@ public final class HarnessRuntime {
         return server != null && server.isRunning();
     }
 
-    public synchronized McpHarnessServer server() {
+    public synchronized McpServer server() {
         return server;
     }
 }

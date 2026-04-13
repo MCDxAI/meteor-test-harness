@@ -1,5 +1,7 @@
-package io.mcdxai.harness.mcp;
+package io.mcdxai.harness.mcp.tools;
 
+import io.mcdxai.harness.mcp.RegistryContext;
+import io.mcdxai.harness.mcp.ToolSchemas;
 import io.mcdxai.harness.services.ScreenDomService;
 import io.mcdxai.harness.util.McpResults;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -7,23 +9,23 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import java.util.List;
 import java.util.Map;
 
-final class HarnessDomInteractionTools {
-    private HarnessDomInteractionTools() {
+public final class DomInteractionTools {
+    private DomInteractionTools() {
     }
 
-    static void register(List<McpServerFeatures.SyncToolSpecification> tools, HarnessRegistryContext context) {
+    public static void register(List<McpServerFeatures.SyncToolSpecification> tools, RegistryContext context) {
         ScreenDomService domService = context.screenDomService();
         DomToolHelper helper = new DomToolHelper(domService);
 
         tools.add(context.tool(
             "click_dom_query",
-            "Find a DOM element with filters and click it atomically.",
+            "Find a DOM element by filters and click it atomically.",
             ToolSchemas.object(
                 Map.of(
-                    "filters", ToolSchemas.objectProperty("Filter object used to select element(s)."),
+                    "filters", ToolSchemas.objectProperty("Filter object to match elements."),
                     "index", ToolSchemas.intProperty("Match index to click. Default 0."),
-                    "button", ToolSchemas.intProperty("Mouse button code. 0=left, 1=right, 2=middle. Default 0."),
-                    "double_click", ToolSchemas.boolProperty("Whether to send click as double-click.")
+                    "button", ToolSchemas.intProperty("Mouse button: 0=left, 1=right, 2=middle. Default 0."),
+                    "double_click", ToolSchemas.boolProperty("Send as double-click. Default false.")
                 ),
                 List.of("filters")
             ),
@@ -47,9 +49,9 @@ final class HarnessDomInteractionTools {
             "Click a DOM element by id.",
             ToolSchemas.object(
                 Map.of(
-                    "element_id", ToolSchemas.stringProperty("Element id from get_screen_dom."),
-                    "button", ToolSchemas.intProperty("Mouse button code. 0=left, 1=right, 2=middle. Default 0."),
-                    "double_click", ToolSchemas.boolProperty("Whether to send click as double-click.")
+                    "element_id", ToolSchemas.stringProperty("Element id."),
+                    "button", ToolSchemas.intProperty("Mouse button: 0=left, 1=right, 2=middle. Default 0."),
+                    "double_click", ToolSchemas.boolProperty("Send as double-click. Default false.")
                 ),
                 List.of("element_id")
             ),
@@ -68,12 +70,12 @@ final class HarnessDomInteractionTools {
 
         tools.add(context.tool(
             "scroll_dom_element",
-            "Scroll at a DOM element location (or screen center if no element id is provided).",
+            "Scroll at a DOM element or screen center.",
             ToolSchemas.object(
                 Map.of(
-                    "element_id", ToolSchemas.stringProperty("Optional element id from get_screen_dom."),
-                    "vertical", ToolSchemas.numberProperty("Vertical scroll amount. Positive/negative follows Minecraft screen semantics."),
-                    "horizontal", ToolSchemas.numberProperty("Horizontal scroll amount.")
+                    "element_id", ToolSchemas.stringProperty("Element id. Omit to scroll at screen center."),
+                    "vertical", ToolSchemas.numberProperty("Vertical scroll. Negative=up, positive=down. Default -1."),
+                    "horizontal", ToolSchemas.numberProperty("Horizontal scroll. Default 0.")
                 ),
                 List.of()
             ),
@@ -95,11 +97,11 @@ final class HarnessDomInteractionTools {
             "Drag from the center of a DOM element by offsets.",
             ToolSchemas.object(
                 Map.of(
-                    "element_id", ToolSchemas.stringProperty("Element id from get_screen_dom."),
-                    "offset_x", ToolSchemas.numberProperty("Drag offset on X axis in screen pixels."),
-                    "offset_y", ToolSchemas.numberProperty("Drag offset on Y axis in screen pixels."),
-                    "steps", ToolSchemas.intProperty("Number of drag interpolation steps. Default 8."),
-                    "button", ToolSchemas.intProperty("Mouse button code. Default 0 (left).")
+                    "element_id", ToolSchemas.stringProperty("Element id."),
+                    "offset_x", ToolSchemas.numberProperty("Drag offset X in screen pixels."),
+                    "offset_y", ToolSchemas.numberProperty("Drag offset Y in screen pixels."),
+                    "steps", ToolSchemas.intProperty("Drag interpolation steps. Default 8."),
+                    "button", ToolSchemas.intProperty("Mouse button: 0=left, 1=right, 2=middle. Default 0.")
                 ),
                 List.of("element_id", "offset_x", "offset_y")
             ),

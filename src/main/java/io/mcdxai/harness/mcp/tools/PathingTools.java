@@ -1,5 +1,7 @@
-package io.mcdxai.harness.mcp;
+package io.mcdxai.harness.mcp.tools;
 
+import io.mcdxai.harness.mcp.RegistryContext;
+import io.mcdxai.harness.mcp.ToolSchemas;
 import io.mcdxai.harness.services.PathingService;
 import io.mcdxai.harness.util.McpResults;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -8,11 +10,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-final class HarnessPathingTools {
-    private HarnessPathingTools() {
+public final class PathingTools {
+    private PathingTools() {
     }
 
-    static void register(List<McpServerFeatures.SyncToolSpecification> tools, HarnessRegistryContext context) {
+    public static void register(List<McpServerFeatures.SyncToolSpecification> tools, RegistryContext context) {
         PathingService pathingService = context.pathingService();
 
         tools.add(context.tool("get_pathing_status", "Get Baritone/PathManager status.", ToolSchemas.emptyObject(),
@@ -20,13 +22,13 @@ final class HarnessPathingTools {
 
         tools.add(context.tool(
             "pathing_move_to",
-            "Move player to target coordinates using PathManager/Baritone.",
+            "Move player to coordinates via PathManager/Baritone.",
             ToolSchemas.object(
                 Map.of(
                     "x", ToolSchemas.intProperty("Target block X."),
                     "y", ToolSchemas.intProperty("Target block Y."),
                     "z", ToolSchemas.intProperty("Target block Z."),
-                    "ignore_y", ToolSchemas.boolProperty("Ignore Y and path in XZ only.")
+                    "ignore_y", ToolSchemas.boolProperty("Path in XZ only, ignore Y. Default false.")
                 ),
                 List.of("x", "y", "z")
             ),
@@ -45,7 +47,7 @@ final class HarnessPathingTools {
         tools.add(context.tool(
             "pathing_move_in_direction",
             "Move player continuously in a yaw direction.",
-            ToolSchemas.object(Map.of("yaw", ToolSchemas.numberProperty("Yaw in degrees.")), List.of("yaw")),
+            ToolSchemas.object(Map.of("yaw", ToolSchemas.numberProperty("Yaw in degrees (south=0, west=90, north=180, east=270).")), List.of("yaw")),
             (exchange, args) -> {
                 float yaw = (float) args.doubleValue("yaw", 0);
                 Map<String, Object> ack = pathingService.startMoveInDirection(yaw);
@@ -56,14 +58,14 @@ final class HarnessPathingTools {
 
         tools.add(context.tool(
             "wait_for_pathing_action",
-            "Wait for a tracked pathing action to reach terminal state (or paused when requested).",
+            "Wait for a pathing action to reach terminal state or paused.",
             ToolSchemas.object(
                 Map.of(
-                    "action_id", ToolSchemas.stringProperty("Action id returned by pathing_move_to or pathing_move_in_direction. Defaults to current active action."),
-                    "timeout_ms", ToolSchemas.intProperty("Maximum wait duration in milliseconds."),
+                    "action_id", ToolSchemas.stringProperty("Action id from pathing_move_to/pathing_move_in_direction. Omit for current."),
+                    "timeout_ms", ToolSchemas.intProperty("Max wait in ms. Default 30000."),
                     "return_on", Map.of(
                         "type", "string",
-                        "description", "Condition to return early: terminal (default) or paused.",
+                        "description", "Return condition: terminal (default) or paused.",
                         "enum", List.of("terminal", "paused")
                     )
                 ),
@@ -88,7 +90,7 @@ final class HarnessPathingTools {
             }
         ));
 
-        tools.add(context.tool("pathing_pause", "Pause current pathing process.", ToolSchemas.emptyObject(),
+        tools.add(context.tool("pathing_pause", "Pause current pathing.", ToolSchemas.emptyObject(),
             (exchange, args) -> {
                 boolean success = pathingService.pause();
                 if (!success) return McpResults.error("Player is not in a world.");
@@ -96,7 +98,7 @@ final class HarnessPathingTools {
             }
         ));
 
-        tools.add(context.tool("pathing_resume", "Resume paused pathing process.", ToolSchemas.emptyObject(),
+        tools.add(context.tool("pathing_resume", "Resume paused pathing.", ToolSchemas.emptyObject(),
             (exchange, args) -> {
                 boolean success = pathingService.resume();
                 if (!success) return McpResults.error("Player is not in a world.");
@@ -104,7 +106,7 @@ final class HarnessPathingTools {
             }
         ));
 
-        tools.add(context.tool("pathing_stop", "Stop current pathing process.", ToolSchemas.emptyObject(),
+        tools.add(context.tool("pathing_stop", "Stop current pathing.", ToolSchemas.emptyObject(),
             (exchange, args) -> {
                 boolean success = pathingService.stop();
                 if (!success) return McpResults.error("Player is not in a world.");

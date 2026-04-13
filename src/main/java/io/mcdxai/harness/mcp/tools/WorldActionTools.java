@@ -1,5 +1,7 @@
-package io.mcdxai.harness.mcp;
+package io.mcdxai.harness.mcp.tools;
 
+import io.mcdxai.harness.mcp.RegistryContext;
+import io.mcdxai.harness.mcp.ToolSchemas;
 import io.mcdxai.harness.util.McpResults;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
@@ -10,11 +12,11 @@ import java.util.Map;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
 
-final class HarnessWorldActionTools {
-    private HarnessWorldActionTools() {
+public final class WorldActionTools {
+    private WorldActionTools() {
     }
 
-    static void register(List<McpServerFeatures.SyncToolSpecification> tools, HarnessRegistryContext context) {
+    public static void register(List<McpServerFeatures.SyncToolSpecification> tools, RegistryContext context) {
         tools.add(context.tool(
             "send_chat",
             "Send chat message as player.",
@@ -65,7 +67,7 @@ final class HarnessWorldActionTools {
         tools.add(context.tool(
             "get_chat_history",
             "Get captured chat history.",
-            ToolSchemas.object(Map.of("count", ToolSchemas.intProperty("Number of newest lines to return.")), List.of()),
+            ToolSchemas.object(Map.of("count", ToolSchemas.intProperty("Max lines to return. Default 100.")), List.of()),
             (exchange, args) -> McpResults.ok(Map.of("messages", context.chatLogService().snapshot(args.intValue("count", 100))))
         ));
 

@@ -6,6 +6,7 @@ import io.mcdxai.harness.config.HarnessConfig;
 import io.mcdxai.harness.services.ChatLogService;
 import io.mcdxai.harness.services.GameStateService;
 import io.mcdxai.harness.services.HarnessService;
+import io.mcdxai.harness.services.MeteorInfoService;
 import io.mcdxai.harness.services.ModuleService;
 import io.mcdxai.harness.services.NameMappingService;
 import io.mcdxai.harness.services.PathingService;
@@ -24,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-final class HarnessRegistryContext {
+public final class RegistryContext {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final HarnessConfig config;
@@ -36,8 +37,9 @@ final class HarnessRegistryContext {
     private final PathingService pathingService;
     private final ChatLogService chatLogService;
     private final HarnessService harnessService;
+    private final MeteorInfoService meteorInfoService;
 
-    HarnessRegistryContext(HarnessConfig config, SessionGate sessionGate, ChatLogService chatLogService) {
+    RegistryContext(HarnessConfig config, SessionGate sessionGate, ChatLogService chatLogService) {
         this.config = config;
         this.sessionGate = sessionGate;
         this.chatLogService = chatLogService;
@@ -49,41 +51,46 @@ final class HarnessRegistryContext {
         this.screenDomService = new ScreenDomService(nameMappingService);
         this.pathingService = new PathingService();
         this.harnessService = new HarnessService(config, sessionGate, nameMappingService);
+        this.meteorInfoService = new MeteorInfoService();
     }
 
-    SessionGate sessionGate() {
+    public SessionGate sessionGate() {
         return sessionGate;
     }
 
-    SettingValueCodec settingValueCodec() {
+    public SettingValueCodec settingValueCodec() {
         return settingValueCodec;
     }
 
-    ModuleService moduleService() {
+    public ModuleService moduleService() {
         return moduleService;
     }
 
-    GameStateService gameStateService() {
+    public GameStateService gameStateService() {
         return gameStateService;
     }
 
-    ScreenDomService screenDomService() {
+    public ScreenDomService screenDomService() {
         return screenDomService;
     }
 
-    PathingService pathingService() {
+    public PathingService pathingService() {
         return pathingService;
     }
 
-    ChatLogService chatLogService() {
+    public ChatLogService chatLogService() {
         return chatLogService;
     }
 
-    HarnessService harnessService() {
+    public HarnessService harnessService() {
         return harnessService;
     }
 
-    McpServerFeatures.SyncToolSpecification tool(
+    public MeteorInfoService meteorInfoService() {
+        return meteorInfoService;
+    }
+
+    public McpServerFeatures.SyncToolSpecification tool(
         String name,
         String description,
         McpSchema.JsonSchema schema,
@@ -92,7 +99,7 @@ final class HarnessRegistryContext {
         return tool(name, description, schema, true, handler);
     }
 
-    McpServerFeatures.SyncToolSpecification tool(
+    public McpServerFeatures.SyncToolSpecification tool(
         String name,
         String description,
         McpSchema.JsonSchema schema,
@@ -133,11 +140,11 @@ final class HarnessRegistryContext {
         }
     }
 
-    int requestTimeoutMillis() {
+    public int requestTimeoutMillis() {
         return config.requestTimeoutSeconds.get() * 1000;
     }
 
-    McpServerFeatures.SyncResourceSpecification resource(
+    public McpServerFeatures.SyncResourceSpecification resource(
         String uri,
         String name,
         String description,
@@ -179,7 +186,7 @@ final class HarnessRegistryContext {
     }
 
     @FunctionalInterface
-    interface ToolHandler {
+    public interface ToolHandler {
         McpSchema.CallToolResult handle(McpSyncServerExchange exchange, ArgReader args) throws Exception;
     }
 }

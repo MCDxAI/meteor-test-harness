@@ -36,15 +36,28 @@ The addon starts an embedded Tomcat server at `127.0.0.1:38861` with MCP endpoin
 ## Source Layout
 
 ```
-src/main/java/com/mcdxai/meteortestharness/
+src/main/java/io/mcdxai/harness/
   MeteorTestHarnessAddon.java    — addon entry point (MeteorAddon subclass)
   HarnessRuntime.java            — MCP server lifecycle (start/stop)
   config/HarnessConfig.java      — settings (bind host/port, session mode)
   mcp/
-    McpHarnessServer.java        — Tomcat + MCP server bootstrap
-    HarnessMcpRegistry.java      — registers all 36 tools and handlers
+    McpServer.java               — Tomcat + MCP server bootstrap
+    McpRegistry.java             — wires up all tools and resources
+    RegistryContext.java         — shared context (services, tool factory, session gate)
     SessionGate.java             — single-session ownership lock
     ToolSchemas.java             — JSON schema definitions for tools
+    EmbeddedWebappClassLoader.java — Tomcat classloader hack
+    tools/
+      CoreTools.java             — harness status/debug/release tools
+      ModuleTools.java           — module CRUD tools
+      WorldStateTools.java       — player/world/inventory query tools
+      WorldActionTools.java      — chat/command/attack action tools
+      PathingTools.java          — Baritone pathing tools
+      DomQueryTools.java         — DOM snapshot/query tools
+      DomInteractionTools.java   — DOM click/scroll/drag tools
+      DomInputTools.java         — DOM text input tools
+      DomToolHelper.java         — shared DOM result-wrapping logic
+      Resources.java             — MCP resource registrations
   services/
     ScreenDomService.java        — DOM engine: snapshot, click, setText, setValue
     ModuleService.java           — Meteor module CRUD

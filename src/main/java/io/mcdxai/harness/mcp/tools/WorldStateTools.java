@@ -1,5 +1,7 @@
-package io.mcdxai.harness.mcp;
+package io.mcdxai.harness.mcp.tools;
 
+import io.mcdxai.harness.mcp.RegistryContext;
+import io.mcdxai.harness.mcp.ToolSchemas;
 import io.mcdxai.harness.services.GameStateService;
 import io.mcdxai.harness.util.McpResults;
 import io.modelcontextprotocol.server.McpServerFeatures;
@@ -7,29 +9,29 @@ import io.modelcontextprotocol.server.McpServerFeatures;
 import java.util.List;
 import java.util.Map;
 
-final class HarnessWorldStateTools {
-    private HarnessWorldStateTools() {
+public final class WorldStateTools {
+    private WorldStateTools() {
     }
 
-    static void register(List<McpServerFeatures.SyncToolSpecification> tools, HarnessRegistryContext context) {
+    public static void register(List<McpServerFeatures.SyncToolSpecification> tools, RegistryContext context) {
         GameStateService gameStateService = context.gameStateService();
 
-        tools.add(context.tool("get_player_state", "Get core player state (position, vitals, movement flags, effects).", ToolSchemas.emptyObject(),
+        tools.add(context.tool("get_player_state", "Get player state (position, vitals, movement flags, effects).", ToolSchemas.emptyObject(),
             (exchange, args) -> McpResults.ok(gameStateService.getPlayerState())));
 
-        tools.add(context.tool("get_world_state", "Get current world state stream.", ToolSchemas.emptyObject(),
+        tools.add(context.tool("get_world_state", "Get current world state snapshot.", ToolSchemas.emptyObject(),
             (exchange, args) -> McpResults.ok(gameStateService.getWorldState())));
 
         tools.add(context.tool(
             "get_player_inventory",
-            "Get granular player inventory slices (hotbar/main/row/range/armor/offhand/hands/selected/all).",
+            "Get player inventory by section.",
             ToolSchemas.object(
                 Map.of(
-                    "section", ToolSchemas.stringProperty("Inventory section: all, inventory, hotbar, main, row, range, selected, armor, offhand, hands."),
-                    "row", ToolSchemas.intProperty("Main inventory row index (0-2). Used when section=row."),
-                    "slot_start", ToolSchemas.intProperty("Start slot index. Used when section=range."),
-                    "slot_end", ToolSchemas.intProperty("End slot index. Used when section=range."),
-                    "include_empty", ToolSchemas.boolProperty("Include empty slots in slot results. Default false.")
+                    "section", ToolSchemas.stringProperty("Section: all, inventory, hotbar, main, row, range, selected, armor, offhand, hands. Default all."),
+                    "row", ToolSchemas.intProperty("Main inventory row (0-2). Used when section=row."),
+                    "slot_start", ToolSchemas.intProperty("Start slot. Used when section=range."),
+                    "slot_end", ToolSchemas.intProperty("End slot. Used when section=range."),
+                    "include_empty", ToolSchemas.boolProperty("Include empty slots. Default false.")
                 ),
                 List.of()
             ),
@@ -42,7 +44,7 @@ final class HarnessWorldStateTools {
             ))
         ));
 
-        tools.add(context.tool("get_crosshair_target", "Get the current crosshair hit target only.", ToolSchemas.emptyObject(),
+        tools.add(context.tool("get_crosshair_target", "Get current crosshair target.", ToolSchemas.emptyObject(),
             (exchange, args) -> McpResults.ok(gameStateService.getCrosshairTarget())));
 
         tools.add(context.tool(
@@ -51,7 +53,7 @@ final class HarnessWorldStateTools {
             ToolSchemas.object(
                 Map.of(
                     "radius", ToolSchemas.numberProperty("Search radius in blocks. Default 32."),
-                    "max_count", ToolSchemas.intProperty("Maximum entities to return. Default 64.")
+                    "max_count", ToolSchemas.intProperty("Max entities to return. Default 64.")
                 ),
                 List.of()
             ),
