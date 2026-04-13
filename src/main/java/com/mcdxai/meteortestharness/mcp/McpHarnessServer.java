@@ -9,6 +9,8 @@ import io.modelcontextprotocol.server.transport.HttpServletStreamableServerTrans
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.Wrapper;
+import org.apache.catalina.core.StandardContext;
+import org.apache.catalina.loader.WebappLoader;
 import org.apache.catalina.startup.Tomcat;
 
 import java.time.Duration;
@@ -139,6 +141,15 @@ public final class McpHarnessServer {
         embeddedTomcat.setBaseDir(baseDir);
 
         Context context = embeddedTomcat.addContext("", baseDir);
+
+        // Use a classloader that skips leak-detection cleanup (JDBC deregister,
+        // ThreadLocal/RMI checks) — those assume a WAR deployment and fail
+        // under Fabric's Knot classloader.
+        if (context instanceof StandardContext stdCtx) {
+            WebappLoader loader = new WebappLoader();
+            loader.setLoaderClass(EmbeddedWebappClassLoader.class.getName());
+            stdCtx.setLoader(loader);
+        }
 
         Wrapper wrapper = context.createWrapper();
         wrapper.setName("mcpServlet");
