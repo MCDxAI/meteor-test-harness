@@ -128,5 +128,4 @@ Notes:
 
 ## Additional Docs
 
-- `HANDOFF.md` - detailed session handoff notes including current bugs, in-progress fixes, and action items
-- `docs/v0-spec.md` - v0 scope and tool surface specification
+- `docs/TOOLS.md` - complete MCP tool registry reference

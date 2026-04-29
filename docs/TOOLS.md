@@ -10,7 +10,7 @@
 
 > Harness runtime status, diagnostics, and session lock management.
 >
-> **Source:** `src/main/java/com/mcdxai/meteortestharness/mcp/HarnessCoreTools.java`
+> **Source:** `src/main/java/io/mcdxai/harness/mcp/tools/CoreTools.java`
 
 ### `get_harness_status`
 
@@ -20,7 +20,7 @@ Get harness runtime/session status.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessCoreTools.java:13-14`
+**Source:** `CoreTools.java:13-14`
 
 ---
 
@@ -32,7 +32,7 @@ Get harness diagnostics (mapping/input internals).
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessCoreTools.java:16-17`
+**Source:** `CoreTools.java:16-17`
 
 ---
 
@@ -44,7 +44,7 @@ Release current session ownership lock.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessCoreTools.java:19-23`
+**Source:** `CoreTools.java:19-23`
 
 ---
 
@@ -98,7 +98,7 @@ Response notes:
 > Read, query, and interact with the current Minecraft screen's widget tree.
 > DOM tools operate on snapshot-based element trees with id-based targeting or query-based filters.
 >
-> **Source:** `src/main/java/com/mcdxai/meteortestharness/mcp/HarnessDomTools.java`
+> **Source:** `src/main/java/io/mcdxai/harness/mcp/tools/DomQueryTools.java`, `DomInteractionTools.java`, `DomInputTools.java`
 
 ### `get_screen_dom`
 
@@ -108,7 +108,7 @@ Get current DOM tree for active screen.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessDomTools.java:17-18`
+**Source:** `DomQueryTools.java`
 
 ---
 
@@ -120,7 +120,7 @@ Get a compact summary for the current or latest DOM snapshot.
 |----------|------|----------|-------------|
 | `refresh` | boolean | No | Capture a fresh snapshot before summarizing. Default true. |
 
-**Source:** `HarnessDomTools.java:20-28`
+**Source:** `DomQueryTools.java`
 
 ---
 
@@ -136,7 +136,7 @@ Query DOM elements server-side using filters and return only matched records.
 | `fields` | array | No | Optional field whitelist for each returned element. |
 | `include_children` | boolean | No | Include children/subtrees for each result. |
 
-**Source:** `HarnessDomTools.java:30-57`
+**Source:** `DomQueryTools.java`
 
 ---
 
@@ -151,7 +151,7 @@ Get one DOM element by id from a snapshot (or latest snapshot).
 | `fields` | array | No | Optional field whitelist for returned element. |
 | `include_children` | boolean | No | Include nested children for this element. |
 
-**Source:** `HarnessDomTools.java:59-84`
+**Source:** `DomQueryTools.java`
 
 ---
 
@@ -166,7 +166,7 @@ Get an element subtree by id with bounded depth.
 | `depth` | integer | No | Child depth to include. Default 2. |
 | `fields` | array | No | Optional field whitelist for nodes in the subtree. |
 
-**Source:** `HarnessDomTools.java:86-111`
+**Source:** `DomQueryTools.java`
 
 ---
 
@@ -181,7 +181,7 @@ Find a DOM element with filters and click it atomically.
 | `button` | integer | No | Mouse button code. 0=left, 1=right, 2=middle. Default 0. |
 | `double_click` | boolean | No | Whether to send click as double-click. |
 
-**Source:** `HarnessDomTools.java:113-138`
+**Source:** `DomInteractionTools.java`
 
 ---
 
@@ -198,7 +198,7 @@ Find a DOM text-capable element with filters and set text atomically.
 | `type_characters` | boolean | No | Type through char events instead of direct assignment. |
 | `clear_first` | boolean | No | Clear current text before typing. |
 
-**Source:** `HarnessDomTools.java:140-169`
+**Source:** `DomInputTools.java`
 
 ---
 
@@ -212,7 +212,7 @@ Click a DOM element by id.
 | `button` | integer | No | Mouse button code. 0=left, 1=right, 2=middle. Default 0. |
 | `double_click` | boolean | No | Whether to send click as double-click. |
 
-**Source:** `HarnessDomTools.java:171-193`
+**Source:** `DomInteractionTools.java`
 
 ---
 
@@ -228,7 +228,7 @@ Set text content on a DOM text input by id.
 | `type_characters` | boolean | No | Type through char events instead of direct assignment. |
 | `clear_first` | boolean | No | Clear current text before typing. |
 
-**Source:** `HarnessDomTools.java:195-221`
+**Source:** `DomInputTools.java`
 
 ---
 
@@ -243,7 +243,7 @@ Type text into a DOM element through keyboard char events.
 | `clear_first` | boolean | No | Clear existing text first. Default true. |
 | `submit` | boolean | No | Press Enter after typing. |
 
-**Source:** `HarnessDomTools.java:223-247`
+**Source:** `DomInputTools.java`
 
 ---
 
@@ -257,7 +257,7 @@ Scroll at a DOM element location (or screen center if no element id is provided)
 | `vertical` | number | No | Vertical scroll amount. Positive/negative follows Minecraft screen semantics. |
 | `horizontal` | number | No | Horizontal scroll amount. |
 
-**Source:** `HarnessDomTools.java:249-271`
+**Source:** `DomInteractionTools.java`
 
 ---
 
@@ -273,7 +273,7 @@ Drag from the center of a DOM element by offsets.
 | `steps` | integer | No | Number of drag interpolation steps. Default 8. |
 | `button` | integer | No | Mouse button code. Default 0 (left). |
 
-**Source:** `HarnessDomTools.java:273-299`
+**Source:** `DomInteractionTools.java`
 
 ---
 
@@ -288,7 +288,7 @@ Send a key press/release. Targets active screen when present, otherwise uses glo
 | `repeat` | integer | No | Number of keyPressed repeats. Default 1. |
 | `release` | boolean | No | Whether to send keyReleased after presses. Default true. |
 
-**Source:** `HarnessDomTools.java:301-325`
+**Source:** `DomInteractionTools.java`
 
 ---
 
@@ -301,7 +301,7 @@ Set value on a DOM control (checkbox/slider) by id.
 | `element_id` | string | **Yes** | Element id from `get_screen_dom`. |
 | `value` | object | **Yes** | Value payload. |
 
-**Source:** `HarnessDomTools.java:327-344`
+**Source:** `DomInputTools.java`
 
 ---
 
@@ -313,7 +313,7 @@ Close current screen/go back.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessDomTools.java:346-347`
+**Source:** `DomInteractionTools.java`
 
 ---
 
@@ -321,7 +321,7 @@ Close current screen/go back.
 
 > List, inspect, toggle, and configure Meteor Client modules and their settings.
 >
-> **Source:** `src/main/java/com/mcdxai/meteortestharness/mcp/HarnessModuleTools.java`
+> **Source:** `src/main/java/io/mcdxai/harness/mcp/tools/ModuleTools.java`
 
 ### `list_modules`
 
@@ -331,7 +331,7 @@ List all Meteor and addon modules.
 |----------|------|----------|-------------|
 | `include_settings` | boolean | No | Include each module's full settings tree. |
 
-**Source:** `HarnessModuleTools.java:18-26`
+**Source:** `ModuleTools.java:18-26`
 
 ---
 
@@ -344,7 +344,7 @@ Get one module and optionally its settings.
 | `module_name` | string | **Yes** | Module name/title. |
 | `include_settings` | boolean | No | Include settings tree. |
 
-**Source:** `HarnessModuleTools.java:28-43`
+**Source:** `ModuleTools.java:28-43`
 
 ---
 
@@ -357,7 +357,7 @@ Enable or disable a module.
 | `module_name` | string | **Yes** | Module name/title. |
 | `active` | boolean | **Yes** | Desired active state. |
 
-**Source:** `HarnessModuleTools.java:45-64`
+**Source:** `ModuleTools.java:45-64`
 
 ---
 
@@ -369,7 +369,7 @@ List settings for a module.
 |----------|------|----------|-------------|
 | `module_name` | string | **Yes** | Module name/title. |
 
-**Source:** `HarnessModuleTools.java:66-78`
+**Source:** `ModuleTools.java:66-78`
 
 ---
 
@@ -382,7 +382,7 @@ Get one setting from a module.
 | `module_name` | string | **Yes** | Module name/title. |
 | `setting_name` | string | **Yes** | Setting name/title. |
 
-**Source:** `HarnessModuleTools.java:80-99`
+**Source:** `ModuleTools.java:80-99`
 
 ---
 
@@ -396,7 +396,7 @@ Set one module setting value.
 | `setting_name` | string | **Yes** | Setting name/title. |
 | `value` | any | **Yes** | New value. Scalars/maps/lists supported depending on setting type. |
 
-**Source:** `HarnessModuleTools.java:101-125`
+**Source:** `ModuleTools.java:101-125`
 
 ---
 
@@ -404,7 +404,7 @@ Set one module setting value.
 
 > Read-only queries about the player, world, inventory, and entities.
 >
-> **Source:** `src/main/java/com/mcdxai/meteortestharness/mcp/HarnessWorldStateTools.java`
+> **Source:** `src/main/java/io/mcdxai/harness/mcp/tools/WorldStateTools.java`
 
 ### `get_player_state`
 
@@ -414,7 +414,7 @@ Get core player state (position, vitals, movement flags, effects).
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessWorldStateTools.java:17-18`
+**Source:** `WorldStateTools.java:17-18`
 
 ---
 
@@ -426,7 +426,7 @@ Get current world state stream.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessWorldStateTools.java:20-21`
+**Source:** `WorldStateTools.java:20-21`
 
 ---
 
@@ -442,7 +442,7 @@ Get granular player inventory slices (hotbar/main/row/range/armor/offhand/hands/
 | `slot_end` | integer | No | End slot index. Used when section=range. |
 | `include_empty` | boolean | No | Include empty slots in slot results. Default false. |
 
-**Source:** `HarnessWorldStateTools.java:23-43`
+**Source:** `WorldStateTools.java:23-43`
 
 ---
 
@@ -454,7 +454,7 @@ Get the current crosshair hit target only.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessWorldStateTools.java:45-46`
+**Source:** `WorldStateTools.java:45-46`
 
 ---
 
@@ -467,7 +467,7 @@ Get nearby entities around the player.
 | `radius` | number | No | Search radius in blocks. Default 32. |
 | `max_count` | integer | No | Maximum entities to return. Default 64. |
 
-**Source:** `HarnessWorldStateTools.java:48-64`
+**Source:** `WorldStateTools.java:48-64`
 
 ---
 
@@ -475,7 +475,7 @@ Get nearby entities around the player.
 
 > Send chat, commands, and manage chat history. Disconnect from world/server.
 >
-> **Source:** `src/main/java/com/mcdxai/meteortestharness/mcp/HarnessWorldActionTools.java`
+> **Source:** `src/main/java/io/mcdxai/harness/mcp/tools/WorldActionTools.java`
 
 ### `send_chat`
 
@@ -485,7 +485,7 @@ Send chat message as player.
 |----------|------|----------|-------------|
 | `message` | string | **Yes** | Chat message text. |
 
-**Source:** `HarnessWorldActionTools.java:18-35`
+**Source:** `WorldActionTools.java:18-35`
 
 ---
 
@@ -497,7 +497,7 @@ Send command as player.
 |----------|------|----------|-------------|
 | `command` | string | **Yes** | Command with or without leading slash. |
 
-**Source:** `HarnessWorldActionTools.java:37-56`
+**Source:** `WorldActionTools.java:37-56`
 
 ---
 
@@ -509,7 +509,7 @@ Disconnect from current world/server.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessWorldActionTools.java:58-63`
+**Source:** `WorldActionTools.java:58-63`
 
 ---
 
@@ -521,7 +521,7 @@ Get captured chat history.
 |----------|------|----------|-------------|
 | `count` | integer | No | Number of newest lines to return. |
 
-**Source:** `HarnessWorldActionTools.java:65-70`
+**Source:** `WorldActionTools.java:65-70`
 
 ---
 
@@ -533,7 +533,7 @@ Clear captured chat history buffer.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessWorldActionTools.java:72-77`
+**Source:** `WorldActionTools.java:72-77`
 
 ---
 
@@ -541,7 +541,7 @@ Clear captured chat history buffer.
 
 > Baritone/Meteor PathManager integration — move to coordinates, move in a direction, pause/resume/stop.
 >
-> **Source:** `src/main/java/com/mcdxai/meteortestharness/mcp/HarnessPathingTools.java`
+> **Source:** `src/main/java/io/mcdxai/harness/mcp/tools/PathingTools.java`
 
 ### `get_pathing_status`
 
@@ -551,7 +551,7 @@ Get Baritone/PathManager status.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessPathingTools.java:18-19`
+**Source:** `PathingTools.java:18-19`
 
 ---
 
@@ -566,7 +566,7 @@ Move player to target coordinates using PathManager/Baritone.
 | `z` | integer | **Yes** | Target block Z. |
 | `ignore_y` | boolean | No | Ignore Y and path in XZ only. |
 
-**Source:** `HarnessPathingTools.java:21-49`
+**Source:** `PathingTools.java:21-49`
 
 ---
 
@@ -578,7 +578,7 @@ Move player continuously in a yaw direction.
 |----------|------|----------|-------------|
 | `yaw` | number | **Yes** | Yaw in degrees. |
 
-**Source:** `HarnessPathingTools.java:51-66`
+**Source:** `PathingTools.java:51-66`
 
 ---
 
@@ -590,7 +590,7 @@ Pause current pathing process.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessPathingTools.java:68-74`
+**Source:** `PathingTools.java:68-74`
 
 ---
 
@@ -602,7 +602,7 @@ Resume paused pathing process.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessPathingTools.java:76-82`
+**Source:** `PathingTools.java:76-82`
 
 ---
 
@@ -614,7 +614,7 @@ Stop current pathing process.
 |----------|------|----------|-------------|
 | — | — | — | No arguments. |
 
-**Source:** `HarnessPathingTools.java:84-90`
+**Source:** `PathingTools.java:84-90`
 
 ---
 
@@ -622,17 +622,17 @@ Stop current pathing process.
 
 | Group | Tools | Source File |
 |-------|-------|-------------|
-| Core & Session | 3 | `HarnessCoreTools.java` |
+| Core & Session | 3 | `CoreTools.java` |
 | Meteor Info | 3 | `MeteorInfoTools.java` |
-| Screen DOM | 15 | `HarnessDomTools.java` |
-| Module Management | 6 | `HarnessModuleTools.java` |
-| World State | 5 | `HarnessWorldStateTools.java` |
-| World Actions | 5 | `HarnessWorldActionTools.java` |
-| Pathing | 6 | `HarnessPathingTools.java` |
+| Screen DOM | 15 | `DomQueryTools.java`, `DomInteractionTools.java`, `DomInputTools.java` |
+| Module Management | 6 | `ModuleTools.java` |
+| World State | 5 | `WorldStateTools.java` |
+| World Actions | 5 | `WorldActionTools.java` |
+| Pathing | 6 | `PathingTools.java` |
 | **Total** | **43** | — |
 
-All source files are under `src/main/java/com/mcdxai/meteortestharness/mcp/`.
+All source files are under `src/main/java/io/mcdxai/harness/mcp/tools/`.
 
-All tools are registered via `HarnessMcpRegistry.java` which delegates to each group's `register()` static method.
+All tools are registered via `McpRegistry.java` which delegates to each group's `register()` static method.
 Tool schemas are built using helpers from `ToolSchemas.java`.
 All handlers run on Minecraft's render thread via `MainThreadInvoker`.
