@@ -3,11 +3,11 @@
 Meteor addon that exposes a local MCP HTTP server for automated, DOM-first testing of Meteor Client and Meteor addons.
 
 Target stack for v0:
-- Minecraft `1.21.11`
-- Meteor Client `1.21.11-SNAPSHOT`
-- Fabric Loader `0.18.2`
-- Java `21`
-- MCP SDK `0.14.1` using HTTP servlet transport
+- Minecraft `26.1.2`
+- Meteor Client `26.1.2-SNAPSHOT`
+- Fabric Loader `0.19.2`
+- Java `25`
+- MCP SDK `1.1.1` using HTTP servlet transport
 
 ## v0 Scope
 
