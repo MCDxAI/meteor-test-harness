@@ -6,10 +6,10 @@ A Meteor Client addon (Fabric mod) that embeds an MCP (Model Context Protocol) H
 
 ## Tech Stack
 
-- Minecraft 1.21.11, Yarn mappings 1.21.11+build.3
-- Fabric Loader 0.18.2, Loom 1.14-SNAPSHOT
-- Meteor Client 1.21.11-SNAPSHOT
-- Java 21 (source/target/release 21)
+- Minecraft 26.1.2 (unobfuscated — no intermediary/Yarn remapping at runtime)
+- Fabric Loader 0.19.2, Loom 1.16-SNAPSHOT
+- Meteor Client 26.1.2-SNAPSHOT
+- Java 25 (source/target/release 25)
 - MCP SDK Java 1.1.1 (`mcp-core` + `mcp-json-jackson2`)
 - Embedded Tomcat 11.0.13 (servlet container for MCP HTTP transport)
 - Gradle with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
@@ -29,7 +29,7 @@ The addon starts an embedded Tomcat server at `127.0.0.1:38861` with MCP endpoin
 ## Key Architectural Constraints
 
 - All tool handlers must run on Minecraft's render thread. `MainThreadInvoker` dispatches via `CompletableFuture` to the client thread. Never call Minecraft APIs from the MCP servlet thread directly.
-- No string-based reflection. Fabric uses intermediary names at runtime (for example, `class_442` not `TitleScreen`). String method-name literals are not remapped - use direct typed method calls only.
+- No string-based reflection. Minecraft 26.x ships unobfuscated so class/method names are directly readable at runtime, but string-based reflection calls still bypass compile-time safety — use direct typed method calls only.
 - DOM clicking must route through the screen, not elements directly. Many list widgets (world list, server list) have entries whose `mouseClicked()` just returns `true` - selection happens in the parent widget dispatch chain. Coordinate-based `screen.mouseClicked(x, y)` must run before direct element clicks.
 - `Widget` (non-`ClickableWidget`) elements get coordinate data from their parent container. Their x/y may be parent-relative, not screen-relative - account for this when computing click coordinates.
 
@@ -40,6 +40,22 @@ src/main/java/io/mcdxai/harness/
   MeteorTestHarnessAddon.java      - addon entry point (MeteorAddon subclass)
   HarnessRuntime.java              - MCP server lifecycle (start/stop)
   config/HarnessConfig.java        - settings (bind host/port, session mode)
+  dom/
+    DomActionHints.java            - click/hover action hint tracking
+    DomEntryListHelper.java        - entry list widget DOM helpers
+    DomInteractor.java             - DOM click/scroll/drag execution
+    DomKeyCodec.java               - key code encoding/decoding
+    DomMetadataHelper.java         - element metadata (type, text, bounds)
+    DomQueryEngine.java            - CSS-like element query engine
+    DomSnapshot.java               - snapshot data structures
+    DomSnapshotBuilder.java        - builds DOM tree from Screen widgets
+    DomValueUtils.java             - value parsing/serialization for DOM elements
+    ElementRef.java                - stable element reference by path
+    MeteorModuleMetadata.java      - Meteor module metadata extraction
+  gui/
+    HarnessTab.java                - in-game Meteor settings tab
+  mixin/
+    KeyboardInvoker.java           - mixin for keyboard input injection
   mcp/
     McpServer.java                 - Tomcat + MCP server bootstrap
     McpRegistry.java               - wires up all tools and resources
@@ -64,6 +80,7 @@ src/main/java/io/mcdxai/harness/
     GameStateService.java          - player/world/inventory/entity state
     PathingService.java            - Baritone/Meteor PathManager integration
     ChatLogService.java            - chat capture and history
+    NameMappingService.java        - Yarn ↔ intermediary name resolution (dead code — unneeded since 26.x removed obfuscation)
     SettingValueCodec.java         - serialize/deserialize Meteor setting values
   util/
     MainThreadInvoker.java         - dispatch to render thread
@@ -84,7 +101,7 @@ It contains Meteor Client source code, Baritone source code, addon template/refe
 - `meteor-addon-template/` - Meteor's official addon template project
 - `meteor-addon-development-reference.md` - addon development documentation
 
-When behavior is unclear (Meteor internals, screen/widget hierarchies, addon integration details), consult this folder instead of guessing. Cross-reference Yarn/intermediary class names (for example, `class_442` = `SelectWorldScreen`) against the source.
+When behavior is unclear (Meteor internals, screen/widget hierarchies, addon integration details), consult this folder instead of guessing.
 
 ## Minecraft Dev MCP Tooling
 

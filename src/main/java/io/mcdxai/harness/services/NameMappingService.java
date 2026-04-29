@@ -22,6 +22,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+// TODO: Dead code — Minecraft 26.x removed obfuscation, class names are directly readable at runtime.
+//  This service no longer remaps anything. Remove along with its consumers (DomSnapshotBuilder,
+//  DomMetadataHelper, HarnessService) when convenient.
 public final class NameMappingService {
     private static final String NAMED_NAMESPACE = "named";
     private static final String INTERMEDIARY_NAMESPACE = "intermediary";

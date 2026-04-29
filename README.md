@@ -1,3 +1,5 @@
+<div align="center">
+
 # Meteor Test Harness
 
 ![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11-00800f?style=flat)
@@ -8,7 +10,9 @@
 
 **LLM-driven test harness for Meteor Client — expose Minecraft as an MCP server and automate the game via DOM-first screen interaction, module control, pathing, and game-state queries.**
 
-A Meteor Client addon that embeds an MCP (Model Context Protocol) HTTP server inside Minecraft. LLM agents connect via **Streamable HTTP transport** to click UI elements, read screen DOM trees, manage Meteor modules, send commands, control Baritone pathing — enabling fully automated testing of Meteor Client and Meteor addons.
+</div>
+
+<div align="center">
 
 ## Features
 
@@ -23,6 +27,10 @@ A Meteor Client addon that embeds an MCP (Model Context Protocol) HTTP server in
 | **Single-session ownership** | Configurable session gate ensures one agent owns the harness at a time. |
 | **Embedded HTTP server** | Tomcat 11.0.13 serves MCP via Streamable HTTP — no external process needed. |
 
+</div>
+
+<div align="center">
+
 ## Quick Start
 
 | Step | Instructions |
@@ -30,6 +38,10 @@ A Meteor Client addon that embeds an MCP (Model Context Protocol) HTTP server in
 | **Requirements** | • Java 25 or higher<br>• Minecraft 1.21.11<br>• Fabric Loader 0.18.2+<br>• Meteor Client 1.21.11+ |
 | **Installation** | 1. Download the latest `.jar` from [releases](https://github.com/MCDxAI/meteor-test-harness/releases)<br>2. Place in `.minecraft/mods/` alongside Meteor Client<br>3. Launch Minecraft with Fabric profile |
 | **Usage** | The MCP server starts automatically on launch (configurable). Connect an MCP client to `http://127.0.0.1:38861/mcp` using Streamable HTTP transport. |
+
+</div>
+
+<div align="center">
 
 ## Configuration
 
@@ -42,9 +54,13 @@ All settings are available in the **Meteor GUI → Test Harness** tab.
 | `mcp-endpoint` | `/mcp` | HTTP endpoint path exposed by the MCP server |
 | `auto-start` | `true` | Start the MCP server automatically when Meteor initializes |
 | `single-session-mode` | `false` | Restrict to one active MCP session owner at a time |
-| `keep-alive-seconds` | `30` | SSE keep-alive interval in seconds |
+| `keep-alive-seconds` | `30` | Connection keep-alive interval in seconds |
 | `request-timeout-seconds` | `30` | Maximum execution time for a single MCP tool call |
 | `chat-history-limit` | `200` | Maximum captured chat lines retained in memory |
+
+</div>
+
+<div align="center">
 
 ## MCP Tools
 
@@ -137,6 +153,10 @@ All settings are available in the **Meteor GUI → Test Harness** tab.
 | `pathing_stop` | Stop current pathing |
 | `wait_for_pathing_action` | Wait for a pathing action to reach a terminal or paused state |
 
+</div>
+
+<div align="center">
+
 ## MCP Resources
 
 | URI | Description |
@@ -150,6 +170,10 @@ All settings are available in the **Meteor GUI → Test Harness** tab.
 | `meteor://state/screen-dom` | DOM snapshot of the active screen |
 | `meteor://chat/history` | Buffered incoming/outgoing chat lines |
 
+</div>
+
+<div align="center">
+
 ## Development
 
 | Task | Command |
@@ -159,7 +183,13 @@ All settings are available in the **Meteor GUI → Test Harness** tab.
 | **Run Client** | `./gradlew runClient` — Launches a Fabric dev client with the addon loaded |
 | **Dependencies** | Bundled: MCP SDK 1.1.1, Embedded Tomcat 11.0.13 • Provided: Meteor Client, Fabric Loader |
 
+</div>
+
+<div align="center">
+
 ## Project Structure
+
+</div>
 
 ```
 src/main/java/io/mcdxai/harness/
@@ -219,13 +249,16 @@ src/main/java/io/mcdxai/harness/
     └── ArgReader.java              # MCP tool argument parsing
 ```
 
+<div align="center">
+
 ## Architecture
 
 - **Thread safety** — All tool handlers run on Minecraft's render thread via `MainThreadInvoker`. Never call Minecraft APIs from the MCP servlet thread directly.
 - **DOM-first interaction** — Screens are snapshotted into a structured DOM tree. Agents query and interact with elements by ID or filters rather than raw pixel coordinates.
-- **No string-based reflection** — Fabric uses intermediary names at runtime. All API calls use direct typed method references.
-- **Streamable HTTP transport** — The MCP server uses the Streamable HTTP protocol over an embedded Tomcat servlet container. No stdio, no WebSocket — just HTTP POST with optional SSE streaming.
+- **Streamable HTTP transport** — The MCP server uses the Streamable HTTP protocol over an embedded Tomcat servlet container. No stdio, no WebSocket — just HTTP POST with optional streaming responses.
 
 ## License
 
 This project is licensed under the [CC0-1.0 license](LICENSE).
+
+</div>
