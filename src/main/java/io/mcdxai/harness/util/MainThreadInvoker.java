@@ -22,7 +22,7 @@ public final class MainThreadInvoker {
             throw new IllegalStateException("Minecraft client is not initialized.");
         }
 
-        if (mc.isOnThread()) {
+        if (mc.isSameThread()) {
             try {
                 return supplier.get();
             } catch (Exception e) {

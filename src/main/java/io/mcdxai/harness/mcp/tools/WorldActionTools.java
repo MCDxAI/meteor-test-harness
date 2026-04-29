@@ -4,8 +4,8 @@ import io.mcdxai.harness.mcp.RegistryContext;
 import io.mcdxai.harness.mcp.ToolSchemas;
 import io.mcdxai.harness.util.McpResults;
 import io.modelcontextprotocol.server.McpServerFeatures;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.player.LocalPlayer;
 
 import java.util.List;
 import java.util.Map;
@@ -22,16 +22,16 @@ public final class WorldActionTools {
             "Send chat message as player.",
             ToolSchemas.object(Map.of("message", ToolSchemas.stringProperty("Chat message text.")), List.of("message")),
             (exchange, args) -> {
-                ClientPlayerEntity player = mc.player;
+                LocalPlayer player = mc.player;
                 if (player == null) return McpResults.error("No local player.");
 
-                ClientPlayNetworkHandler networkHandler = player.networkHandler;
+                ClientPacketListener networkHandler = player.connection;
                 if (networkHandler == null) return McpResults.error("Network handler unavailable.");
 
                 String message = args.string("message", "");
                 if (message.isBlank()) return McpResults.error("Message cannot be empty.");
 
-                networkHandler.sendChatMessage(message);
+                networkHandler.sendChat(message);
                 return McpResults.ok("Message sent.");
             }
         ));
@@ -41,10 +41,10 @@ public final class WorldActionTools {
             "Send command as player.",
             ToolSchemas.object(Map.of("command", ToolSchemas.stringProperty("Command with or without leading slash.")), List.of("command")),
             (exchange, args) -> {
-                ClientPlayerEntity player = mc.player;
+                LocalPlayer player = mc.player;
                 if (player == null) return McpResults.error("No local player.");
 
-                ClientPlayNetworkHandler networkHandler = player.networkHandler;
+                ClientPacketListener networkHandler = player.connection;
                 if (networkHandler == null) return McpResults.error("Network handler unavailable.");
 
                 String command = args.string("command", "").trim();
@@ -52,7 +52,7 @@ public final class WorldActionTools {
                 if (command.startsWith("/")) command = command.substring(1);
                 if (command.isEmpty()) return McpResults.error("Command cannot be empty.");
 
-                networkHandler.sendChatCommand(command);
+                networkHandler.sendCommand(command);
                 return McpResults.ok("Command sent.");
             }
         ));
@@ -60,7 +60,7 @@ public final class WorldActionTools {
         tools.add(context.tool("disconnect_world", "Disconnect from current world/server.", ToolSchemas.emptyObject(),
             (exchange, args) -> {
                 context.harnessService().disconnectToTitle();
-                return McpResults.ok(Map.of("inWorld", mc.world != null));
+                return McpResults.ok(Map.of("inWorld", mc.level != null));
             }
         ));
 

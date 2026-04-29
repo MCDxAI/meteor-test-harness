@@ -5,13 +5,12 @@ import meteordevelopment.meteorclient.gui.widgets.input.WSlider;
 import meteordevelopment.meteorclient.gui.widgets.input.WTextBox;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WCheckbox;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WPressable;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.gui.widget.EntryListWidget;
-import net.minecraft.client.gui.widget.ScrollableWidget;
-import net.minecraft.client.gui.widget.SliderWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.components.AbstractSelectionList;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.AbstractScrollArea;
+import net.minecraft.client.gui.components.AbstractSliderButton;
+import net.minecraft.client.gui.components.EditBox;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,21 +20,21 @@ public final class DomActionHints {
     private DomActionHints() {
     }
 
-    public static void addVanillaHints(Map<String, Object> mapped, Element element, EntryListWidget<?> owningList, double x, double y, double w, double h) {
+    public static void addVanillaHints(Map<String, Object> mapped, GuiEventListener element, AbstractSelectionList<?> owningList, double x, double y, double w, double h) {
         List<String> actions = new ArrayList<>();
         boolean clickable = canClickVanillaElement(element, owningList, w, h);
 
         if (clickable) {
             actions.add("click");
         }
-        if (element instanceof TextFieldWidget) {
+        if (element instanceof EditBox) {
             actions.add("set_text");
             actions.add("type_text");
         }
-        if (element instanceof ScrollableWidget || element instanceof EntryListWidget<?>) {
+        if (element instanceof AbstractScrollArea || element instanceof AbstractSelectionList<?>) {
             actions.add("scroll");
         }
-        if (element instanceof SliderWidget) {
+        if (element instanceof AbstractSliderButton) {
             actions.add("drag");
         }
 
@@ -44,17 +43,17 @@ public final class DomActionHints {
         mapped.put("actions", actions);
     }
 
-    private static boolean canClickVanillaElement(Element element, EntryListWidget<?> owningList, double w, double h) {
+    private static boolean canClickVanillaElement(GuiEventListener element, AbstractSelectionList<?> owningList, double w, double h) {
         boolean hasCoordinates = !Double.isNaN(w) && !Double.isNaN(h) && w > 0 && h > 0;
         if (!hasCoordinates) {
             return false;
         }
 
-        if (element instanceof ClickableWidget widget) {
+        if (element instanceof AbstractWidget widget) {
             return widget.visible && widget.active;
         }
 
-        return element instanceof AlwaysSelectedEntryListWidget.Entry<?> && owningList != null;
+        return owningList != null && owningList.children().contains(element);
     }
 
     public static void addMeteorHints(Map<String, Object> mapped, WWidget widget, double w, double h, boolean moduleWidget) {

@@ -8,7 +8,7 @@ import meteordevelopment.meteorclient.settings.Settings;
 import meteordevelopment.meteorclient.settings.StringSetting;
 import meteordevelopment.meteorclient.systems.System;
 import meteordevelopment.meteorclient.systems.Systems;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.CompoundTag;
 
 public final class HarnessConfig extends System<HarnessConfig> {
     public final Settings settings = new Settings();
@@ -93,14 +93,14 @@ public final class HarnessConfig extends System<HarnessConfig> {
     }
 
     @Override
-    public NbtCompound toTag() {
-        NbtCompound tag = new NbtCompound();
+    public CompoundTag toTag() {
+        CompoundTag tag = new CompoundTag();
         tag.put("settings", settings.toTag());
         return tag;
     }
 
     @Override
-    public HarnessConfig fromTag(NbtCompound tag) {
+    public HarnessConfig fromTag(CompoundTag tag) {
         if (tag.contains("settings")) {
             settings.fromTag(tag.getCompoundOrEmpty("settings"));
         }

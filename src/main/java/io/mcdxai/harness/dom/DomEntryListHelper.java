@@ -1,40 +1,39 @@
 package io.mcdxai.harness.dom;
 
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.ParentElement;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
-import net.minecraft.client.gui.widget.EntryListWidget;
+import net.minecraft.client.gui.components.AbstractSelectionList;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class DomEntryListHelper {
-    boolean isEntryElement(Screen screen, Element element) {
-        return element instanceof AlwaysSelectedEntryListWidget.Entry<?>;
+    boolean isEntryElement(Screen screen, GuiEventListener element) {
+        return findOwningEntryList(screen, element) != null;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    boolean isSelectedInList(EntryListWidget<?> entryList, Element element) {
-        EntryListWidget rawList = (EntryListWidget) entryList;
-        return rawList.getSelectedOrNull() == element;
+    boolean isSelectedInList(AbstractSelectionList<?> entryList, GuiEventListener element) {
+        AbstractSelectionList rawList = (AbstractSelectionList) entryList;
+        return rawList.getSelected() == element;
     }
 
-    boolean isEntrySelected(Screen screen, Element entry) {
-        EntryListWidget<?> owner = findOwningEntryList(screen, entry);
+    boolean isEntrySelected(Screen screen, GuiEventListener entry) {
+        AbstractSelectionList<?> owner = findOwningEntryList(screen, entry);
         return owner != null && isSelectedInList(owner, entry);
     }
 
-    boolean trySelectEntryAtCoordinates(Screen screen, Click click, boolean doubled) {
-        List<EntryListWidget<?>> entryLists = new ArrayList<>();
-        for (Element child : screen.children()) {
+    boolean trySelectEntryAtCoordinates(Screen screen, MouseButtonEvent click, boolean doubled) {
+        List<AbstractSelectionList<?>> entryLists = new ArrayList<>();
+        for (GuiEventListener child : screen.children()) {
             collectEntryLists(child, entryLists);
         }
 
-        for (EntryListWidget<?> entryList : entryLists) {
-            Element hovered = entryList.hoveredElement(click.x(), click.y()).orElse(null);
-            if (hovered instanceof AlwaysSelectedEntryListWidget.Entry<?> && selectEntry(screen, entryList, hovered, click, doubled)) {
+        for (AbstractSelectionList<?> entryList : entryLists) {
+            GuiEventListener hovered = entryList.getChildAt(click.x(), click.y()).orElse(null);
+            if (hovered != null && selectEntry(screen, entryList, hovered, click, doubled)) {
                 return true;
             }
         }
@@ -42,8 +41,8 @@ public final class DomEntryListHelper {
         return false;
     }
 
-    boolean trySelectEntryFallback(Screen screen, Element entry, Click click, boolean doubled) {
-        EntryListWidget<?> owner = findOwningEntryList(screen, entry);
+    boolean trySelectEntryFallback(Screen screen, GuiEventListener entry, MouseButtonEvent click, boolean doubled) {
+        AbstractSelectionList<?> owner = findOwningEntryList(screen, entry);
         if (owner == null || !owner.children().contains(entry)) {
             return false;
         }
@@ -51,9 +50,9 @@ public final class DomEntryListHelper {
         return selectEntry(screen, owner, entry, click, doubled);
     }
 
-    EntryListWidget<?> findOwningEntryList(Screen screen, Element entry) {
-        for (Element child : screen.children()) {
-            EntryListWidget<?> found = findOwningEntryList(child, entry);
+    AbstractSelectionList<?> findOwningEntryList(Screen screen, GuiEventListener entry) {
+        for (GuiEventListener child : screen.children()) {
+            AbstractSelectionList<?> found = findOwningEntryList(child, entry);
             if (found != null) {
                 return found;
             }
@@ -62,28 +61,28 @@ public final class DomEntryListHelper {
         return null;
     }
 
-    private void collectEntryLists(Element element, List<EntryListWidget<?>> entryLists) {
-        if (element instanceof EntryListWidget<?> entryList) {
+    private void collectEntryLists(GuiEventListener element, List<AbstractSelectionList<?>> entryLists) {
+        if (element instanceof AbstractSelectionList<?> entryList) {
             entryLists.add(entryList);
         }
 
-        if (element instanceof ParentElement parent) {
-            for (Element child : parent.children()) {
+        if (element instanceof ContainerEventHandler parent) {
+            for (GuiEventListener child : parent.children()) {
                 if (child == element) continue;
                 collectEntryLists(child, entryLists);
             }
         }
     }
 
-    private EntryListWidget<?> findOwningEntryList(Element element, Element entry) {
-        if (element instanceof EntryListWidget<?> entryList && entryList.children().contains(entry)) {
+    private AbstractSelectionList<?> findOwningEntryList(GuiEventListener element, GuiEventListener entry) {
+        if (element instanceof AbstractSelectionList<?> entryList && entryList.children().contains(entry)) {
             return entryList;
         }
 
-        if (element instanceof ParentElement parent) {
-            for (Element child : parent.children()) {
+        if (element instanceof ContainerEventHandler parent) {
+            for (GuiEventListener child : parent.children()) {
                 if (child == element) continue;
-                EntryListWidget<?> found = findOwningEntryList(child, entry);
+                AbstractSelectionList<?> found = findOwningEntryList(child, entry);
                 if (found != null) {
                     return found;
                 }
@@ -93,7 +92,7 @@ public final class DomEntryListHelper {
         return null;
     }
 
-    private boolean selectEntry(Screen screen, EntryListWidget<?> entryList, Element entry, Click click, boolean doubled) {
+    private boolean selectEntry(Screen screen, AbstractSelectionList<?> entryList, GuiEventListener entry, MouseButtonEvent click, boolean doubled) {
         try {
             if (!entryList.children().contains(entry)) {
                 return false;

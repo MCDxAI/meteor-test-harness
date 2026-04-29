@@ -6,15 +6,15 @@ import meteordevelopment.meteorclient.gui.widgets.WWidget;
 import meteordevelopment.meteorclient.gui.widgets.input.WSlider;
 import meteordevelopment.meteorclient.gui.widgets.input.WTextBox;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WCheckbox;
-import net.minecraft.client.gui.Click;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.client.input.CharInput;
-import net.minecraft.client.input.KeyInput;
-import net.minecraft.client.input.MouseInput;
-import net.minecraft.client.option.KeyBinding;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.layouts.LayoutElement;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonInfo;
+import net.minecraft.client.KeyMapping;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.LinkedHashMap;
@@ -149,7 +149,7 @@ public final class DomInteractor {
         result.put("doubleClick", doubled);
 
         ElementRef ref = snapshotBuilder.resolveRef(id);
-        Screen screen = mc.currentScreen;
+        Screen screen = mc.screen;
         if (ref == null || screen == null) {
             result.put("reason", ref == null ? "element_not_found" : "no_active_screen");
             return finishInteraction(result, false, "none", screen);
@@ -159,7 +159,7 @@ public final class DomInteractor {
 
         refreshCoordinates(ref);
 
-        Click click = null;
+        MouseButtonEvent click = null;
         if (ref.clickableCoordinates()) {
             double targetX = ref.centerX();
             double targetY = ref.centerY();
@@ -175,7 +175,7 @@ public final class DomInteractor {
 
         if (click != null) {
             handled = invokeScreenClick(screen, click, doubled);
-            if (mc.currentScreen != screen) {
+            if (mc.screen != screen) {
                 if (button == 1 && isMeteorModuleEntry(ref)) {
                     return finishMeteorModuleTransition(result, ref, screen, "screen");
                 }
@@ -186,7 +186,7 @@ public final class DomInteractor {
         }
         result.put("screenHandled", handled);
 
-        if (ref.backing instanceof Element element && button == 0 && entryListHelper.isEntryElement(screen, element)) {
+        if (ref.backing instanceof GuiEventListener element && button == 0 && entryListHelper.isEntryElement(screen, element)) {
             result.put("entryTarget", true);
             result.put("selectedBefore", entryListHelper.isEntrySelected(screen, element));
 
@@ -212,9 +212,9 @@ public final class DomInteractor {
             handled = false;
         }
 
-        if (!handled && ref.backing instanceof Element element && click != null) {
+        if (!handled && ref.backing instanceof GuiEventListener element && click != null) {
             handled = invokeElementClick(element, click, doubled);
-            if (mc.currentScreen != screen) {
+            if (mc.screen != screen) {
                 result.put("reason", "screen_changed");
                 return finishInteraction(result, true, "element", screen);
             }
@@ -232,13 +232,13 @@ public final class DomInteractor {
         result.put("clearFirst", clearFirst);
 
         ElementRef ref = snapshotBuilder.resolveRef(id);
-        Screen screen = mc.currentScreen;
+        Screen screen = mc.screen;
         if (ref == null) {
             result.put("reason", "element_not_found");
             return finishInteraction(result, false, "none", screen);
         }
 
-        if (ref.backing instanceof TextFieldWidget textFieldWidget) {
+        if (ref.backing instanceof EditBox textFieldWidget) {
             if (typeCharacters && screen != null) {
                 refreshCoordinates(ref);
                 if (ref.clickableCoordinates()) {
@@ -249,13 +249,13 @@ public final class DomInteractor {
                 }
 
                 if (clearFirst) {
-                    textFieldWidget.setText("");
+                    textFieldWidget.setValue("");
                 }
 
                 boolean typed = typeChars(screen, text);
                 if (!typed) {
-                    String current = clearFirst ? "" : textFieldWidget.getText();
-                    textFieldWidget.setText(current + text);
+                    String current = clearFirst ? "" : textFieldWidget.getValue();
+                    textFieldWidget.setValue(current + text);
                 }
 
                 if (submit) {
@@ -266,7 +266,7 @@ public final class DomInteractor {
                 return finishInteraction(result, true, "typed", screen);
             }
 
-            textFieldWidget.setText(text);
+            textFieldWidget.setValue(text);
             if (submit && screen != null) {
                 pressKey(screen, GLFW.GLFW_KEY_ENTER, 0, 1, true);
             }
@@ -308,7 +308,7 @@ public final class DomInteractor {
 
     public Map<String, Object> setValueDetailed(String id, Object value) {
         Map<String, Object> result = interaction("set_value", id);
-        Screen screen = mc.currentScreen;
+        Screen screen = mc.screen;
 
         ElementRef ref = snapshotBuilder.resolveRef(id);
         if (ref == null) {
@@ -352,17 +352,17 @@ public final class DomInteractor {
         Integer keyCode = DomKeyCodec.parseKeyCode(keyName);
         if (keyCode == null) {
             result.put("reason", "unknown_key");
-            return finishInteraction(result, false, "none", mc.currentScreen);
+            return finishInteraction(result, false, "none", mc.screen);
         }
 
         int clampedRepeat = Math.max(1, Math.min(32, repeat));
-        Screen screen = mc.currentScreen;
+        Screen screen = mc.screen;
         Screen screenBefore = screen;
 
         boolean handled = dispatchKeyboardKey(keyCode, modifiers, clampedRepeat, release, result);
         String path = screen == null ? "global" : "screen";
 
-        if (mc.currentScreen != screenBefore) {
+        if (mc.screen != screenBefore) {
             result.put("screenTransitionDetected", true);
         }
 
@@ -376,7 +376,7 @@ public final class DomInteractor {
         result.put("verticalAmount", verticalAmount);
         result.put("horizontalAmount", horizontalAmount);
 
-        Screen screen = mc.currentScreen;
+        Screen screen = mc.screen;
         if (screen == null) {
             result.put("reason", "no_active_screen");
             return finishInteraction(result, false, "none", null);
@@ -425,7 +425,7 @@ public final class DomInteractor {
         result.put("button", button);
 
         ElementRef ref = snapshotBuilder.resolveRef(id);
-        Screen screen = mc.currentScreen;
+        Screen screen = mc.screen;
         if (ref == null || screen == null) {
             result.put("reason", ref == null ? "element_not_found" : "no_active_screen");
             return finishInteraction(result, false, "none", screen);
@@ -446,7 +446,7 @@ public final class DomInteractor {
 
         double startX = startTargetX / coordinateScale;
         double startY = startTargetY / coordinateScale;
-        Click startClick = new Click(startX, startY, new MouseInput(button, 0));
+        MouseButtonEvent startClick = new MouseButtonEvent(startX, startY, new MouseButtonInfo(button, 0));
 
         try {
             screen.mouseMoved(startX, startY);
@@ -471,7 +471,7 @@ public final class DomInteractor {
             double nextY = startY + dispatchOffsetY * ratio;
             double dx = nextX - previousX;
             double dy = nextY - previousY;
-            Click dragClick = new Click(nextX, nextY, new MouseInput(button, 0));
+            MouseButtonEvent dragClick = new MouseButtonEvent(nextX, nextY, new MouseButtonInfo(button, 0));
 
             try {
                 dragged = screen.mouseDragged(dragClick, dx, dy) || dragged;
@@ -485,7 +485,7 @@ public final class DomInteractor {
 
         boolean released;
         try {
-            released = screen.mouseReleased(new Click(previousX, previousY, new MouseInput(button, 0)));
+            released = screen.mouseReleased(new MouseButtonEvent(previousX, previousY, new MouseButtonInfo(button, 0)));
         } catch (Exception ignored) {
             released = false;
         }
@@ -507,8 +507,8 @@ public final class DomInteractor {
     }
 
     public boolean navigateBack() {
-        if (mc.currentScreen == null) return false;
-        mc.currentScreen.close();
+        if (mc.screen == null) return false;
+        mc.screen.onClose();
         return true;
     }
 
@@ -524,7 +524,7 @@ public final class DomInteractor {
         result.put("success", success);
         result.put("path", path);
 
-        Screen screenAfter = mc.currentScreen;
+        Screen screenAfter = mc.screen;
         result.put("screenChanged", screenBefore != screenAfter);
         result.put("screenAfter", screenAfter == null ? null : metadataHelper.classMetadata(screenAfter.getClass()));
         return result;
@@ -532,7 +532,7 @@ public final class DomInteractor {
 
     private Map<String, Object> postInteractionScreenContext(Map<String, Object> interaction) {
         boolean changed = asBoolean(interaction.get("screenChanged"), false);
-        Screen screen = mc.currentScreen;
+        Screen screen = mc.screen;
         Map<String, Object> ctx = new LinkedHashMap<>();
 
         if (screen == null) {
@@ -559,7 +559,7 @@ public final class DomInteractor {
     }
 
     private void refreshCoordinates(ElementRef ref) {
-        if (ref.backing instanceof Widget widget) {
+        if (ref.backing instanceof LayoutElement widget) {
             ref.x = widget.getX();
             ref.y = widget.getY();
             ref.width = widget.getWidth();
@@ -576,7 +576,7 @@ public final class DomInteractor {
         boolean handled = false;
         for (int codepoint : text.codePoints().toArray()) {
             try {
-                handled = screen.charTyped(new CharInput(codepoint, 0)) || handled;
+                handled = screen.charTyped(new CharacterEvent(codepoint)) || handled;
             } catch (Exception ignored) {
                 // Continue typing remaining characters.
             }
@@ -586,7 +586,7 @@ public final class DomInteractor {
 
     private boolean pressKey(Screen screen, int keyCode, int modifiers, int repeat, boolean release) {
         boolean handled = false;
-        KeyInput input = new KeyInput(keyCode, 0, modifiers);
+        KeyEvent input = new KeyEvent(keyCode, 0, modifiers);
 
         for (int i = 0; i < repeat; i++) {
             try {
@@ -608,39 +608,39 @@ public final class DomInteractor {
     }
 
     private boolean dispatchKeyboardKey(int keyCode, int modifiers, int repeat, boolean release, Map<String, Object> result) {
-        if (mc.keyboard == null || mc.getWindow() == null) {
+        if (mc.keyboardHandler == null || mc.getWindow() == null) {
             result.put("dispatchError", "keyboard_unavailable");
             return false;
         }
 
-        if (!(mc.keyboard instanceof KeyboardInvoker invoker)) {
+        if (!(mc.keyboardHandler instanceof KeyboardInvoker invoker)) {
             result.put("dispatchError", "keyboard_invoker_unavailable");
             return false;
         }
 
-        long windowHandle = mc.getWindow().getHandle();
+        long windowHandle = mc.getWindow().handle();
         int scancode = GLFW.glfwGetKeyScancode(keyCode);
         if (scancode < 0) {
             scancode = 0;
         }
 
-        KeyInput input = new KeyInput(keyCode, scancode, modifiers);
+        KeyEvent input = new KeyEvent(keyCode, scancode, modifiers);
         result.put("scancode", scancode);
         result.put("matchedBindings", countMatchingBindings(input));
         result.put("dispatchMode", "keyboard_onKey");
 
         int dispatchedEvents = 0;
         try {
-            invoker.meteorHarness$invokeOnKey(windowHandle, GLFW.GLFW_PRESS, input);
+            invoker.meteorHarness$invokeKeyPress(windowHandle, GLFW.GLFW_PRESS, input);
             dispatchedEvents++;
 
             for (int i = 1; i < repeat; i++) {
-                invoker.meteorHarness$invokeOnKey(windowHandle, GLFW.GLFW_REPEAT, input);
+                invoker.meteorHarness$invokeKeyPress(windowHandle, GLFW.GLFW_REPEAT, input);
                 dispatchedEvents++;
             }
 
             if (release) {
-                invoker.meteorHarness$invokeOnKey(windowHandle, GLFW.GLFW_RELEASE, input);
+                invoker.meteorHarness$invokeKeyPress(windowHandle, GLFW.GLFW_RELEASE, input);
                 dispatchedEvents++;
             }
 
@@ -654,21 +654,21 @@ public final class DomInteractor {
         }
     }
 
-    private int countMatchingBindings(KeyInput input) {
-        if (mc.options == null || mc.options.allKeys == null) {
+    private int countMatchingBindings(KeyEvent input) {
+        if (mc.options == null || mc.options.keyMappings == null) {
             return 0;
         }
 
         int count = 0;
-        for (KeyBinding binding : mc.options.allKeys) {
-            if (binding != null && binding.matchesKey(input)) {
+        for (KeyMapping binding : mc.options.keyMappings) {
+            if (binding != null && binding.matches(input)) {
                 count++;
             }
         }
         return count;
     }
 
-    private boolean invokeScreenClick(Screen screen, Click click, boolean doubled) {
+    private boolean invokeScreenClick(Screen screen, MouseButtonEvent click, boolean doubled) {
         try {
             screen.mouseMoved(click.x(), click.y());
         } catch (Exception ignored) {
@@ -684,7 +684,7 @@ public final class DomInteractor {
         }
     }
 
-    private boolean invokeElementClick(Element element, Click click, boolean doubled) {
+    private boolean invokeElementClick(GuiEventListener element, MouseButtonEvent click, boolean doubled) {
         try {
             boolean pressed = element.mouseClicked(click, doubled);
             boolean released = pressed && element.mouseReleased(click);
@@ -694,9 +694,9 @@ public final class DomInteractor {
         }
     }
 
-    private Click buildScreenClick(Screen screen, ElementRef ref, int button, double targetX, double targetY) {
+    private MouseButtonEvent buildScreenClick(Screen screen, ElementRef ref, int button, double targetX, double targetY) {
         double scale = coordinateScaleForScreenDispatch(screen, ref.backing);
-        return new Click(targetX / scale, targetY / scale, new MouseInput(button, 0));
+        return new MouseButtonEvent(targetX / scale, targetY / scale, new MouseButtonInfo(button, 0));
     }
 
     private double coordinateScaleForScreenDispatch(Screen screen, Object backing) {
@@ -704,7 +704,7 @@ public final class DomInteractor {
             return 1D;
         }
 
-        double scale = mc.getWindow() == null ? 1D : mc.getWindow().getScaleFactor();
+        double scale = mc.getWindow() == null ? 1D : mc.getWindow().getGuiScale();
         return scale > 0D ? scale : 1D;
     }
 
@@ -713,7 +713,7 @@ public final class DomInteractor {
     }
 
     private Map<String, Object> finishMeteorModuleTransition(Map<String, Object> result, ElementRef ref, Screen screenBefore, String path) {
-        Screen screenAfter = mc.currentScreen;
+        Screen screenAfter = mc.screen;
         String expectedTitle = ref.moduleTitle == null || ref.moduleTitle.isBlank() ? ref.moduleName : ref.moduleTitle;
         String actualTitle = screenAfter == null || screenAfter.getTitle() == null ? "" : screenAfter.getTitle().getString();
         boolean isModuleScreen = screenAfter != null && screenAfter.getClass().getName().endsWith(".ModuleScreen");

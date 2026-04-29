@@ -1,0 +1,94 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'build.gradle.kts'
+      - 'gradle/**'
+      - '.github/workflows/release.yml'
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'build.gradle.kts'
+      - 'gradle/**'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 0.2.0)'
+        required: true
+        type: string
+      release_name:
+        description: 'Optional release title override'
+        required: false
+        type: string
+      prerelease:
+        description: 'Mark as prerelease'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Determine release metadata
+        id: meta
+        if: github.event_name != 'pull_request'
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="v${{ github.event.inputs.version }}"
+            RELEASE_NAME="${{ github.event.inputs.release_name }}"
+            [ -z "$RELEASE_NAME" ] && RELEASE_NAME="$TAG"
+            [ "${{ github.event.inputs.prerelease }}" = "true" ] && PRERELEASE="true" || PRERELEASE="false"
+          else
+            VERSION=$(grep '^mod-version' gradle/libs.versions.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+            TIMESTAMP=$(date -u +%Y%m%d-%H%M%S)
+            TAG="v${VERSION}-dev.${TIMESTAMP}"
+            RELEASE_NAME="Dev Build ${VERSION} (${TIMESTAMP})"
+            PRERELEASE="true"
+          fi
+          {
+            echo "tag_name=$TAG"
+            echo "release_name=$RELEASE_NAME"
+            echo "prerelease=$PRERELEASE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build --no-configuration-cache
+
+      - name: Publish Release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.meta.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
+          name: ${{ steps.meta.outputs.release_name }}
+          prerelease: ${{ steps.meta.outputs.prerelease }}
+          files: build/libs/*.jar
+          fail_on_unmatched_files: true

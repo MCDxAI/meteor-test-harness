@@ -2,10 +2,10 @@ package io.mcdxai.harness.services;
 
 import io.mcdxai.harness.config.HarnessConfig;
 import io.mcdxai.harness.mcp.SessionGate;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.network.chat.Component;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -30,7 +30,7 @@ public class HarnessService {
         status.put("bindHost", config.bindHost.get());
         status.put("bindPort", config.bindPort.get());
         status.put("mcpEndpoint", config.mcpEndpoint.get());
-        status.put("inWorld", mc.world != null);
+        status.put("inWorld", mc.level != null);
         status.put("hasPlayer", mc.player != null);
 
         putScreenInfo(status);
@@ -56,10 +56,10 @@ public class HarnessService {
     }
 
     public void disconnectToTitle() {
-        ClientWorld world = mc.world;
+        ClientLevel world = mc.level;
         if (world != null) {
             try {
-                world.disconnect(Text.literal("Disconnected by meteor-test-harness"));
+                world.disconnect(Component.literal("Disconnected by meteor-test-harness"));
             } catch (Exception ignored) {
                 // Fall through to other strategies.
             }
@@ -69,7 +69,7 @@ public class HarnessService {
     }
 
     private void putScreenInfo(Map<String, Object> map) {
-        Screen currentScreen = mc.currentScreen;
+        Screen currentScreen = mc.screen;
         if (currentScreen == null) {
             map.put("currentScreen", null);
             map.put("currentScreenMapped", null);

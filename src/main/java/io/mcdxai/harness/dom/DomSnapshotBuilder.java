@@ -12,15 +12,14 @@ import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WCheckbox;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WPressable;
 import meteordevelopment.meteorclient.systems.modules.Module;
-import net.minecraft.client.gui.Element;
-import net.minecraft.client.gui.ParentElement;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.widget.AlwaysSelectedEntryListWidget;
-import net.minecraft.client.gui.widget.ClickableWidget;
-import net.minecraft.client.gui.widget.EntryListWidget;
-import net.minecraft.client.gui.widget.TextFieldWidget;
-import net.minecraft.client.gui.widget.Widget;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.components.events.ContainerEventHandler;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.components.AbstractSelectionList;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.layouts.LayoutElement;
+import net.minecraft.network.chat.Component;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -55,7 +54,7 @@ public final class DomSnapshotBuilder {
         refs.clear();
         idCounter = 0;
 
-        Screen screen = mc.currentScreen;
+        Screen screen = mc.screen;
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("hasScreen", screen != null);
         payload.put("mappingRuntimeNamespace", nameMappingService.getRuntimeNamespace());
@@ -174,15 +173,15 @@ public final class DomSnapshotBuilder {
     private List<Map<String, Object>> buildVanillaDom(Screen screen) {
         List<Map<String, Object>> elements = new ArrayList<>();
 
-        List<? extends Element> children = screen.children();
-        for (Element child : children) {
+        List<? extends GuiEventListener> children = screen.children();
+        for (GuiEventListener child : children) {
             elements.add(mapVanillaElement(child, null));
         }
 
         return elements;
     }
 
-    private Map<String, Object> mapVanillaElement(Element element, EntryListWidget<?> owningList) {
+    private Map<String, Object> mapVanillaElement(GuiEventListener element, AbstractSelectionList<?> owningList) {
         String id = nextId("v");
 
         ElementRef ref = new ElementRef(id, element);
@@ -193,7 +192,7 @@ public final class DomSnapshotBuilder {
         mapped.put("engine", "vanilla");
         metadataHelper.putClassMetadata(mapped, element.getClass());
 
-        if (element instanceof ClickableWidget widget) {
+        if (element instanceof AbstractWidget widget) {
             mapped.put("label", widget.getMessage() == null ? "" : widget.getMessage().getString());
             mapped.put("visible", widget.visible);
             mapped.put("active", widget.active);
@@ -208,7 +207,7 @@ public final class DomSnapshotBuilder {
             ref.height = widget.getHeight();
         }
 
-        if (element instanceof Widget widget) {
+        if (element instanceof LayoutElement widget) {
             mapped.putIfAbsent("x", widget.getX());
             mapped.putIfAbsent("y", widget.getY());
             mapped.putIfAbsent("width", widget.getWidth());
@@ -222,28 +221,25 @@ public final class DomSnapshotBuilder {
             }
         }
 
-        if (owningList != null && element instanceof Widget && !(element instanceof ClickableWidget)) {
+        if (owningList != null && element instanceof LayoutElement && !(element instanceof AbstractWidget)) {
             mapped.put("selected", isSelectedInList(owningList, element));
         }
 
-        if (element instanceof AlwaysSelectedEntryListWidget.Entry<?> entry) {
-            Text narration = entry.getNarration();
-            if (narration != null) {
-                mapped.putIfAbsent("label", narration.getString());
-            }
+        if (owningList != null && owningList.children().contains(element)) {
+            mapped.putIfAbsent("role", "list_entry");
         }
 
-        if (element instanceof TextFieldWidget textFieldWidget) {
-            mapped.put("text", textFieldWidget.getText());
+        if (element instanceof EditBox textFieldWidget) {
+            mapped.put("text", textFieldWidget.getValue());
             mapped.put("editable", textFieldWidget.isActive());
         }
 
         DomActionHints.addVanillaHints(mapped, element, owningList, ref.x, ref.y, ref.width, ref.height);
 
-        EntryListWidget<?> nextOwningList = element instanceof EntryListWidget<?> entryListWidget ? entryListWidget : owningList;
-        if (element instanceof ParentElement parentElement) {
+        AbstractSelectionList<?> nextOwningList = element instanceof AbstractSelectionList<?> entryListWidget ? entryListWidget : owningList;
+        if (element instanceof ContainerEventHandler parentElement) {
             List<Map<String, Object>> children = new ArrayList<>();
-            for (Element child : parentElement.children()) {
+            for (GuiEventListener child : parentElement.children()) {
                 if (child == element) continue;
                 children.add(mapVanillaElement(child, nextOwningList));
             }
@@ -254,9 +250,9 @@ public final class DomSnapshotBuilder {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    private boolean isSelectedInList(EntryListWidget<?> entryList, Element element) {
-        EntryListWidget rawList = (EntryListWidget) entryList;
-        return rawList.getSelectedOrNull() == element;
+    private boolean isSelectedInList(AbstractSelectionList<?> entryList, GuiEventListener element) {
+        AbstractSelectionList rawList = (AbstractSelectionList) entryList;
+        return rawList.getSelected() == element;
     }
 
     @SuppressWarnings("unchecked")

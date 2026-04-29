@@ -1,19 +1,5 @@
-import org.gradle.api.artifacts.MinimalExternalModuleDependency
-import org.gradle.api.provider.Provider
-import org.gradle.kotlin.dsl.DependencyHandlerScope
-
 plugins {
     alias(libs.plugins.fabric.loom)
-}
-
-val yarnMappingsBundle by configurations.creating {
-    isCanBeConsumed = false
-    isCanBeResolved = true
-}
-
-fun DependencyHandlerScope.modInclude(dependencyProvider: Provider<out MinimalExternalModuleDependency>) {
-    modImplementation(dependencyProvider)
-    include(dependencyProvider)
 }
 
 base {
@@ -23,7 +9,6 @@ base {
 }
 
 repositories {
-    mavenCentral()
     maven {
         name = "meteor-maven"
         url = uri("https://maven.meteordev.org/releases")
@@ -32,19 +17,25 @@ repositories {
         name = "meteor-maven-snapshots"
         url = uri("https://maven.meteordev.org/snapshots")
     }
+    mavenCentral()
+}
+
+val modInclude: Configuration by configurations.creating
+
+configurations {
+    implementation.configure { extendsFrom(modInclude) }
+    include.configure { extendsFrom(modInclude) }
 }
 
 dependencies {
     // Fabric + Minecraft
     minecraft(libs.minecraft)
-    mappings(variantOf(libs.yarn) { classifier("v2") })
-    add(yarnMappingsBundle.name, variantOf(libs.yarn) { classifier("v2") })
-    modImplementation(libs.fabric.loader)
+    implementation(libs.fabric.loader)
 
     // Meteor
-    modImplementation(libs.meteor.client)
+    implementation(libs.meteor.client)
     compileOnly(libs.orbit)
-    modCompileOnly(libs.baritone)
+    compileOnly(libs.baritone)
 
     // MCP SDK
     modInclude(libs.mcpCore)
@@ -69,6 +60,12 @@ dependencies {
     testRuntimeOnly(libs.junitPlatformLauncher)
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(libs.versions.jdk.get().toInt()))
+    }
+}
+
 tasks {
     processResources {
         val propertyMap = mapOf(
@@ -82,25 +79,15 @@ tasks {
         filesMatching("fabric.mod.json") {
             expand(propertyMap)
         }
-
-        from({ zipTree(yarnMappingsBundle.singleFile) }) {
-            include("mappings/mappings.tiny")
-            rename { "yarn.tiny" }
-        }
     }
 
     jar {
         inputs.property("archivesName", project.base.archivesName.get())
     }
 
-    java {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-
     withType<JavaCompile> {
         options.encoding = "UTF-8"
-        options.release = 21
+        options.release = 25
         options.compilerArgs.add("-Xlint:deprecation")
         options.compilerArgs.add("-Xlint:unchecked")
     }

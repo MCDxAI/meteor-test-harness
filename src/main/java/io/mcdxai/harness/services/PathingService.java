@@ -12,7 +12,7 @@ import baritone.api.process.PathingCommand;
 import io.mcdxai.harness.util.MainThreadInvoker;
 import meteordevelopment.meteorclient.pathing.IPathManager;
 import meteordevelopment.meteorclient.pathing.PathManagers;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -56,7 +56,7 @@ public final class PathingService {
 
     public Map<String, Object> getStatus() {
         Map<String, Object> status = new LinkedHashMap<>();
-        boolean inWorld = mc.player != null && mc.world != null;
+        boolean inWorld = mc.player != null && mc.level != null;
         status.put("inWorld", inWorld);
 
         if (!inWorld) {
@@ -319,7 +319,7 @@ public final class PathingService {
         if (action == null || action.terminal) return;
 
         try {
-            if (mc.isOnThread()) {
+            if (mc.isSameThread()) {
                 refreshActionStateOnMainThread(action);
             } else {
                 MainThreadInvoker.run(() -> refreshActionStateOnMainThread(action), SNAPSHOT_TIMEOUT);
@@ -443,7 +443,7 @@ public final class PathingService {
         if (action == null || !"move_to".equals(action.kind) || mc.player == null) return false;
         if (action.targetX == null || action.targetY == null || action.targetZ == null) return false;
 
-        BlockPos playerPos = mc.player.getBlockPos();
+        BlockPos playerPos = mc.player.blockPosition();
         if (action.ignoreY) {
             return playerPos.getX() == action.targetX && playerPos.getZ() == action.targetZ;
         }
@@ -530,7 +530,7 @@ public final class PathingService {
     }
 
     private boolean canPath() {
-        return mc.player != null && mc.world != null;
+        return mc.player != null && mc.level != null;
     }
 
     private static boolean isBaritoneManager(IPathManager manager) {

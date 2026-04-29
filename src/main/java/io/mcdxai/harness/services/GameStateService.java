@@ -1,23 +1,23 @@
 package io.mcdxai.harness.services;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.PlayerListEntry;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EquipmentSlot;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.item.ItemStack;
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.GameType;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -31,8 +31,8 @@ public final class GameStateService {
     public Map<String, Object> getPlayerState() {
         Map<String, Object> state = new LinkedHashMap<>();
 
-        ClientPlayerEntity player = mc.player;
-        ClientWorld world = mc.world;
+        LocalPlayer player = mc.player;
+        ClientLevel world = mc.level;
 
         state.put("inWorld", player != null && world != null);
         if (player == null || world == null) {
@@ -40,30 +40,30 @@ public final class GameStateService {
         }
 
         state.put("name", player.getName().getString());
-        state.put("uuid", player.getUuidAsString());
+        state.put("uuid", player.getStringUUID());
         state.put("position", vec(player.getX(), player.getY(), player.getZ()));
-        state.put("blockPosition", blockPos(player.getBlockPos()));
-        state.put("velocity", vec(player.getVelocity()));
-        state.put("yaw", player.getYaw());
-        state.put("pitch", player.getPitch());
+        state.put("blockPosition", blockPos(player.blockPosition()));
+        state.put("velocity", vec(player.getDeltaMovement()));
+        state.put("yaw", player.getYRot());
+        state.put("pitch", player.getXRot());
         state.put("health", player.getHealth());
         state.put("maxHealth", player.getMaxHealth());
         state.put("absorption", player.getAbsorptionAmount());
-        state.put("hunger", player.getHungerManager().getFoodLevel());
-        state.put("saturation", player.getHungerManager().getSaturationLevel());
+        state.put("hunger", player.getFoodData().getFoodLevel());
+        state.put("saturation", player.getFoodData().getSaturationLevel());
         state.put("experienceLevel", player.experienceLevel);
         state.put("experienceProgress", player.experienceProgress);
-        state.put("air", player.getAir());
-        state.put("maxAir", player.getMaxAir());
-        state.put("onGround", player.isOnGround());
-        state.put("sneaking", player.isSneaking());
+        state.put("air", player.getAirSupply());
+        state.put("maxAir", player.getMaxAirSupply());
+        state.put("onGround", player.onGround());
+        state.put("sneaking", player.isShiftKeyDown());
         state.put("sprinting", player.isSprinting());
         state.put("swimming", player.isSwimming());
-        state.put("fallFlying", player.isGliding());
+        state.put("fallFlying", player.isFallFlying());
         state.put("flying", player.getAbilities().flying);
-        state.put("mayFly", player.getAbilities().allowFlying);
+        state.put("mayFly", player.getAbilities().mayfly);
         state.put("usingItem", player.isUsingItem());
-        state.put("gameMode", resolveGameMode(player));
+        state.put("gameMode", resolveGameType(player));
 
         state.put("effects", effects(player));
 
@@ -73,34 +73,34 @@ public final class GameStateService {
     public Map<String, Object> getWorldState() {
         Map<String, Object> state = new LinkedHashMap<>();
 
-        ClientWorld world = mc.world;
-        ClientPlayerEntity player = mc.player;
+        ClientLevel world = mc.level;
+        LocalPlayer player = mc.player;
 
         state.put("inWorld", world != null);
-        state.put("singleplayer", mc.getServer() != null);
+        state.put("singleplayer", mc.hasSingleplayerServer());
 
         if (world == null) {
             return state;
         }
 
-        RegistryKey<?> key = world.getRegistryKey();
-        Identifier dimensionId = key == null ? null : key.getValue();
+        ResourceKey<?> key = world.dimension();
+        Identifier dimensionId = key == null ? null : key.identifier();
 
         state.put("dimension", dimensionId == null ? "unknown" : dimensionId.toString());
-        state.put("time", world.getTime());
-        state.put("timeOfDay", world.getTimeOfDay());
+        state.put("time", world.getGameTime());
+        state.put("timeOfDay", world.getGameTime() % 24000L);
         state.put("raining", world.isRaining());
         state.put("thundering", world.isThundering());
-        state.put("rainGradient", world.getRainGradient(1.0F));
-        state.put("thunderGradient", world.getThunderGradient(1.0F));
+        state.put("rainGradient", world.getRainLevel(1.0F));
+        state.put("thunderGradient", world.getThunderLevel(1.0F));
         state.put("difficulty", world.getDifficulty().name());
-        state.put("players", world.getPlayers().size());
+        state.put("players", world.players().size());
 
         if (player != null) {
-            BlockPos pos = player.getBlockPos();
+            BlockPos pos = player.blockPosition();
             BlockState blockState = world.getBlockState(pos);
             state.put("playerBlock", blockState.getBlock().getName().getString());
-            state.put("playerBiome", world.getBiome(pos).getKey().map(k -> k.getValue().toString()).orElse("unknown"));
+            state.put("playerBiome", world.getBiome(pos).unwrapKey().map(k -> k.identifier().toString()).orElse("unknown"));
         }
 
         return state;
@@ -109,7 +109,7 @@ public final class GameStateService {
     public Map<String, Object> getPlayerInventory(String section, int row, int slotStart, int slotEnd, boolean includeEmpty) {
         Map<String, Object> state = new LinkedHashMap<>();
 
-        ClientPlayerEntity player = mc.player;
+        LocalPlayer player = mc.player;
         if (player == null) {
             state.put("inWorld", false);
             return state;
@@ -123,31 +123,31 @@ public final class GameStateService {
         state.put("section", normalizedSection);
         state.put("includeEmpty", includeEmpty);
         state.put("selectedSlot", selectedSlot);
-        state.put("inventorySize", inventory.size());
+        state.put("inventorySize", inventory.getContainerSize());
 
         List<Map<String, Object>> slots = new ArrayList<>();
 
         if (normalizedSection.equals("offhand")) {
             int index = 40;
-            if (index < inventory.size()) {
-                appendInventorySlot(slots, inventory.getStack(index), index, selectedSlot, includeEmpty);
+            if (index < inventory.getContainerSize()) {
+                appendInventorySlot(slots, inventory.getItem(index), index, selectedSlot, includeEmpty);
             }
         } else if (normalizedSection.equals("armor")) {
-            for (int i = 36; i <= 39 && i < inventory.size(); i++) {
-                appendInventorySlot(slots, inventory.getStack(i), i, selectedSlot, includeEmpty);
+            for (int i = 36; i <= 39 && i < inventory.getContainerSize(); i++) {
+                appendInventorySlot(slots, inventory.getItem(i), i, selectedSlot, includeEmpty);
             }
         } else if (normalizedSection.equals("hands")) {
-            state.put("mainHand", itemStack(player.getMainHandStack()));
-            state.put("offHand", itemStack(player.getOffHandStack()));
+            state.put("mainHand", itemStack(player.getMainHandItem()));
+            state.put("offHand", itemStack(player.getOffhandItem()));
         } else {
-            int[] range = resolveInventoryRange(normalizedSection, row, slotStart, slotEnd, selectedSlot, inventory.size());
+            int[] range = resolveInventoryRange(normalizedSection, row, slotStart, slotEnd, selectedSlot, inventory.getContainerSize());
             state.put("slotRange", Map.of("start", range[0], "end", range[1]));
             if (normalizedSection.equals("row")) {
                 state.put("row", Math.max(0, Math.min(2, row)));
             }
 
-            for (int i = range[0]; i <= range[1] && i < inventory.size(); i++) {
-                appendInventorySlot(slots, inventory.getStack(i), i, selectedSlot, includeEmpty);
+            for (int i = range[0]; i <= range[1] && i < inventory.getContainerSize(); i++) {
+                appendInventorySlot(slots, inventory.getItem(i), i, selectedSlot, includeEmpty);
             }
         }
 
@@ -163,8 +163,8 @@ public final class GameStateService {
     public Map<String, Object> getNearbyEntities(double radius, int maxCount) {
         Map<String, Object> state = new LinkedHashMap<>();
 
-        ClientPlayerEntity player = mc.player;
-        ClientWorld world = mc.world;
+        LocalPlayer player = mc.player;
+        ClientLevel world = mc.level;
         state.put("inWorld", player != null && world != null);
 
         if (player == null || world == null) {
@@ -180,7 +180,7 @@ public final class GameStateService {
         double originY = player.getY();
         double originZ = player.getZ();
 
-        for (Entity entity : world.getEntities()) {
+        for (Entity entity : world.entitiesForRendering()) {
             if (entity == player) continue;
 
             double dx = entity.getX() - originX;
@@ -191,15 +191,15 @@ public final class GameStateService {
 
             Map<String, Object> mapped = new LinkedHashMap<>();
             mapped.put("id", entity.getId());
-            mapped.put("uuid", entity.getUuidAsString());
+            mapped.put("uuid", entity.getStringUUID());
             mapped.put("name", entity.getName().getString());
-            mapped.put("type", String.valueOf(Registries.ENTITY_TYPE.getId(entity.getType())));
+            mapped.put("type", String.valueOf(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType())));
             mapped.put("position", vec(entity.getX(), entity.getY(), entity.getZ()));
-            mapped.put("blockPosition", blockPos(entity.getBlockPos()));
-            mapped.put("velocity", vec(entity.getVelocity()));
+            mapped.put("blockPosition", blockPos(entity.blockPosition()));
+            mapped.put("velocity", vec(entity.getDeltaMovement()));
             mapped.put("distance", distance);
-            mapped.put("onGround", entity.isOnGround());
-            mapped.put("submergedInWater", entity.isSubmergedInWater());
+            mapped.put("onGround", entity.onGround());
+            mapped.put("submergedInWater", entity.isUnderWater());
 
             if (entity instanceof LivingEntity livingEntity) {
                 mapped.put("health", livingEntity.getHealth());
@@ -221,24 +221,24 @@ public final class GameStateService {
     }
 
     private Map<String, Object> crosshairTarget() {
-        HitResult target = mc.crosshairTarget;
+        HitResult target = mc.hitResult;
         if (target == null) return Map.of("type", "none");
 
         Map<String, Object> map = new LinkedHashMap<>();
         HitResult.Type type = target.getType();
         map.put("type", type.name().toLowerCase());
-        map.put("position", vec(target.getPos()));
+        map.put("position", vec(target.getLocation()));
 
         if (type == HitResult.Type.BLOCK && target instanceof BlockHitResult blockHitResult) {
             BlockPos pos = blockHitResult.getBlockPos();
             map.put("blockPos", blockPos(pos));
-            if (mc.world != null) {
-                BlockState blockState = mc.world.getBlockState(pos);
+            if (mc.level != null) {
+                BlockState blockState = mc.level.getBlockState(pos);
                 map.put("block", blockState.getBlock().getName().getString());
             }
         } else if (type == HitResult.Type.ENTITY && target instanceof EntityHitResult entityHitResult) {
             Entity entity = entityHitResult.getEntity();
-            map.put("entityType", String.valueOf(Registries.ENTITY_TYPE.getId(entity.getType())));
+            map.put("entityType", String.valueOf(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType())));
             map.put("entityName", entity.getName().getString());
             map.put("entityId", entity.getId());
             map.put("entityPos", vec(entity.getX(), entity.getY(), entity.getZ()));
@@ -247,57 +247,57 @@ public final class GameStateService {
         return map;
     }
 
-    private List<Map<String, Object>> effects(ClientPlayerEntity player) {
+    private List<Map<String, Object>> effects(LocalPlayer player) {
         List<Map<String, Object>> effects = new ArrayList<>();
-        for (StatusEffectInstance instance : player.getStatusEffects()) {
+        for (MobEffectInstance instance : player.getActiveEffects()) {
             Map<String, Object> data = new LinkedHashMap<>();
-            data.put("effect", String.valueOf(instance.getEffectType().getKey().map(k -> k.getValue()).orElse(Identifier.of("minecraft:unknown"))));
+            data.put("effect", instance.getEffect().unwrapKey().map(k -> k.identifier().toString()).orElse("unknown"));
             data.put("amplifier", instance.getAmplifier());
             data.put("duration", instance.getDuration());
             data.put("ambient", instance.isAmbient());
-            data.put("showParticles", instance.shouldShowParticles());
+            data.put("showParticles", instance.isVisible());
             effects.add(data);
         }
         return effects;
     }
 
-    private List<Object> inventory(ClientPlayerEntity player) {
+    private List<Object> inventory(LocalPlayer player) {
         var inventory = player.getInventory();
-        List<Object> slots = new ArrayList<>(inventory.size());
+        List<Object> slots = new ArrayList<>(inventory.getContainerSize());
 
-        for (int i = 0; i < inventory.size(); i++) {
-            slots.add(itemStack(inventory.getStack(i)));
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            slots.add(itemStack(inventory.getItem(i)));
         }
 
         return slots;
     }
 
-    private List<Object> armor(ClientPlayerEntity player) {
+    private List<Object> armor(LocalPlayer player) {
         List<Object> armor = new ArrayList<>(4);
-        armor.add(itemStack(player.getEquippedStack(EquipmentSlot.HEAD)));
-        armor.add(itemStack(player.getEquippedStack(EquipmentSlot.CHEST)));
-        armor.add(itemStack(player.getEquippedStack(EquipmentSlot.LEGS)));
-        armor.add(itemStack(player.getEquippedStack(EquipmentSlot.FEET)));
+        armor.add(itemStack(player.getItemBySlot(EquipmentSlot.HEAD)));
+        armor.add(itemStack(player.getItemBySlot(EquipmentSlot.CHEST)));
+        armor.add(itemStack(player.getItemBySlot(EquipmentSlot.LEGS)));
+        armor.add(itemStack(player.getItemBySlot(EquipmentSlot.FEET)));
         return armor;
     }
 
     private Map<String, Object> itemStack(ItemStack stack) {
-        Identifier itemId = Registries.ITEM.getId(stack.getItem());
+        Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
 
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("itemId", itemId == null ? "unknown" : itemId.toString());
         data.put("count", stack.getCount());
         data.put("empty", stack.isEmpty());
-        data.put("name", stack.getName().getString());
-        data.put("damage", stack.getDamage());
+        data.put("name", stack.getHoverName().getString());
+        data.put("damage", stack.getDamageValue());
         data.put("maxDamage", stack.getMaxDamage());
-        data.put("damageable", stack.isDamageable());
-        data.put("enchanted", stack.hasEnchantments());
+        data.put("damageable", stack.isDamageableItem());
+        data.put("enchanted", stack.isEnchanted());
 
         return data;
     }
 
-    private Map<String, Object> vec(Vec3d vec) {
+    private Map<String, Object> vec(Vec3 vec) {
         return Map.of("x", vec.x, "y", vec.y, "z", vec.z);
     }
 
@@ -386,25 +386,25 @@ public final class GameStateService {
         };
     }
 
-    private String resolveGameMode(ClientPlayerEntity player) {
-        if (mc.getNetworkHandler() == null) {
+    private String resolveGameType(LocalPlayer player) {
+        if (mc.getConnection() == null) {
             return "unknown";
         }
 
-        PlayerListEntry entry = mc.getNetworkHandler().getPlayerListEntry(player.getUuid());
+        PlayerInfo entry = mc.getConnection().getPlayerInfo(player.getUUID());
         if (entry == null) {
             return "unknown";
         }
 
-        GameMode gameMode = entry.getGameMode();
+        GameType gameMode = entry.getGameMode();
         if (gameMode == null) {
             return "unknown";
         }
 
-        return gameMode.getId();
+        return gameMode.getName();
     }
 
-    private int resolveSelectedSlot(ClientPlayerEntity player) {
+    private int resolveSelectedSlot(LocalPlayer player) {
         return player.getInventory().getSelectedSlot();
     }
 }

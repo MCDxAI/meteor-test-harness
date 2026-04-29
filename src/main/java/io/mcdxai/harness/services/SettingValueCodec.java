@@ -4,20 +4,20 @@ import meteordevelopment.meteorclient.settings.Setting;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.utils.misc.Keybind;
 import meteordevelopment.meteorclient.utils.render.color.SettingColor;
-import net.minecraft.block.Block;
-import net.minecraft.block.entity.BlockEntityType;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.effect.StatusEffect;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particle.ParticleType;
-import net.minecraft.potion.Potion;
-import net.minecraft.registry.Registries;
-import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.core.particles.ParticleType;
+import net.minecraft.world.item.alchemy.Potion;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.resources.Identifier;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -80,7 +80,7 @@ public final class SettingValueCodec {
             if (current instanceof BlockPos) {
                 return applyBlockPos(setting, value);
             }
-            if (current instanceof Vec3d) {
+            if (current instanceof Vec3) {
                 return applyVec3d(setting, value);
             }
             if (current instanceof Block) {
@@ -92,7 +92,7 @@ public final class SettingValueCodec {
             if (current instanceof EntityType<?>) {
                 return applyRegistryObject(setting, value, RegistryKind.ENTITY_TYPE);
             }
-            if (current instanceof StatusEffect) {
+            if (current instanceof MobEffect) {
                 return applyRegistryObject(setting, value, RegistryKind.STATUS_EFFECT);
             }
             if (current instanceof Potion) {
@@ -107,7 +107,7 @@ public final class SettingValueCodec {
             if (current instanceof BlockEntityType<?>) {
                 return applyRegistryObject(setting, value, RegistryKind.BLOCK_ENTITY_TYPE);
             }
-            if (current instanceof ScreenHandlerType<?>) {
+            if (current instanceof MenuType<?>) {
                 return applyRegistryObject(setting, value, RegistryKind.SCREEN_HANDLER_TYPE);
             }
             if (current instanceof Module) {
@@ -154,7 +154,7 @@ public final class SettingValueCodec {
         if (value instanceof BlockPos pos) {
             return Map.of("x", pos.getX(), "y", pos.getY(), "z", pos.getZ());
         }
-        if (value instanceof Vec3d vec) {
+        if (value instanceof Vec3 vec) {
             return Map.of("x", vec.x, "y", vec.y, "z", vec.z);
         }
         if (value instanceof SettingColor color) {
@@ -169,19 +169,19 @@ public final class SettingValueCodec {
         if (value instanceof Keybind keybind) {
             var tag = keybind.toTag();
             return Map.of(
-                "isKey", tag.getBoolean("isKey", true),
-                "value", tag.getInt("value", -1),
-                "modifiers", tag.getInt("modifiers", 0),
+                "isKey", tag.contains("isKey") ? tag.getBoolean("isKey") : true,
+                "value", tag.contains("value") ? tag.getInt("value") : -1,
+                "modifiers", tag.contains("modifiers") ? tag.getInt("modifiers") : 0,
                 "label", keybind.toString()
             );
         }
         if (value instanceof ItemStack stack) {
-            Identifier id = Registries.ITEM.getId(stack.getItem());
+            Identifier id = BuiltInRegistries.ITEM.getKey(stack.getItem());
             return Map.of(
                 "itemId", id == null ? "unknown" : id.toString(),
                 "count", stack.getCount(),
                 "empty", stack.isEmpty(),
-                "name", stack.getName().getString()
+                "name", stack.getHoverName().getString()
             );
         }
 
@@ -213,39 +213,39 @@ public final class SettingValueCodec {
         Identifier id;
 
         if (value instanceof Block block) {
-            id = Registries.BLOCK.getId(block);
+            id = BuiltInRegistries.BLOCK.getKey(block);
             return id == null ? null : id.toString();
         }
         if (value instanceof Item item) {
-            id = Registries.ITEM.getId(item);
+            id = BuiltInRegistries.ITEM.getKey(item);
             return id == null ? null : id.toString();
         }
         if (value instanceof EntityType<?> entityType) {
-            id = Registries.ENTITY_TYPE.getId(entityType);
+            id = BuiltInRegistries.ENTITY_TYPE.getKey(entityType);
             return id == null ? null : id.toString();
         }
-        if (value instanceof StatusEffect statusEffect) {
-            id = Registries.STATUS_EFFECT.getId(statusEffect);
+        if (value instanceof MobEffect statusEffect) {
+            id = BuiltInRegistries.MOB_EFFECT.getKey(statusEffect);
             return id == null ? null : id.toString();
         }
         if (value instanceof Potion potion) {
-            id = Registries.POTION.getId(potion);
+            id = BuiltInRegistries.POTION.getKey(potion);
             return id == null ? null : id.toString();
         }
         if (value instanceof SoundEvent soundEvent) {
-            id = Registries.SOUND_EVENT.getId(soundEvent);
+            id = BuiltInRegistries.SOUND_EVENT.getKey(soundEvent);
             return id == null ? null : id.toString();
         }
         if (value instanceof ParticleType<?> particleType) {
-            id = Registries.PARTICLE_TYPE.getId(particleType);
+            id = BuiltInRegistries.PARTICLE_TYPE.getKey(particleType);
             return id == null ? null : id.toString();
         }
         if (value instanceof BlockEntityType<?> blockEntityType) {
-            id = Registries.BLOCK_ENTITY_TYPE.getId(blockEntityType);
+            id = BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(blockEntityType);
             return id == null ? null : id.toString();
         }
-        if (value instanceof ScreenHandlerType<?> screenHandlerType) {
-            id = Registries.SCREEN_HANDLER.getId(screenHandlerType);
+        if (value instanceof MenuType<?> screenHandlerType) {
+            id = BuiltInRegistries.MENU.getKey(screenHandlerType);
             return id == null ? null : id.toString();
         }
 
@@ -316,7 +316,7 @@ public final class SettingValueCodec {
         double y = toDouble(map.get("y"));
         double z = toDouble(map.get("z"));
 
-        return setTyped(setting, new Vec3d(x, y, z));
+        return setTyped(setting, new Vec3(x, y, z));
     }
 
     private boolean applyRegistryObject(Setting<?> setting, Object value, RegistryKind kind) {
@@ -324,15 +324,15 @@ public final class SettingValueCodec {
         if (id == null) return false;
 
         Object resolved = switch (kind) {
-            case BLOCK -> Registries.BLOCK.get(id);
-            case ITEM -> Registries.ITEM.get(id);
-            case ENTITY_TYPE -> Registries.ENTITY_TYPE.get(id);
-            case STATUS_EFFECT -> Registries.STATUS_EFFECT.get(id);
-            case POTION -> Registries.POTION.get(id);
-            case SOUND_EVENT -> Registries.SOUND_EVENT.get(id);
-            case PARTICLE_TYPE -> Registries.PARTICLE_TYPE.get(id);
-            case BLOCK_ENTITY_TYPE -> Registries.BLOCK_ENTITY_TYPE.get(id);
-            case SCREEN_HANDLER_TYPE -> Registries.SCREEN_HANDLER.get(id);
+            case BLOCK -> BuiltInRegistries.BLOCK.getValue(id);
+            case ITEM -> BuiltInRegistries.ITEM.getValue(id);
+            case ENTITY_TYPE -> BuiltInRegistries.ENTITY_TYPE.getValue(id);
+            case STATUS_EFFECT -> BuiltInRegistries.MOB_EFFECT.getValue(id);
+            case POTION -> BuiltInRegistries.POTION.getValue(id);
+            case SOUND_EVENT -> BuiltInRegistries.SOUND_EVENT.getValue(id);
+            case PARTICLE_TYPE -> BuiltInRegistries.PARTICLE_TYPE.getValue(id);
+            case BLOCK_ENTITY_TYPE -> BuiltInRegistries.BLOCK_ENTITY_TYPE.getValue(id);
+            case SCREEN_HANDLER_TYPE -> BuiltInRegistries.MENU.getValue(id);
         };
 
         return resolved != null && setTyped(setting, resolved);
@@ -370,7 +370,7 @@ public final class SettingValueCodec {
             for (Object item : list) {
                 Identifier id = toIdentifier(item);
                 if (id == null) continue;
-                Item resolved = Registries.ITEM.get(id);
+                Item resolved = BuiltInRegistries.ITEM.getValue(id);
                 if (resolved != null) items.add(resolved);
             }
             return ((Setting<List<Item>>) setting).set(items);
@@ -380,7 +380,7 @@ public final class SettingValueCodec {
             for (Object item : list) {
                 Identifier id = toIdentifier(item);
                 if (id == null) continue;
-                Block resolved = Registries.BLOCK.get(id);
+                Block resolved = BuiltInRegistries.BLOCK.getValue(id);
                 if (resolved != null) blocks.add(resolved);
             }
             return ((Setting<List<Block>>) setting).set(blocks);
@@ -390,20 +390,20 @@ public final class SettingValueCodec {
             for (Object item : list) {
                 Identifier id = toIdentifier(item);
                 if (id == null) continue;
-                EntityType<?> resolved = Registries.ENTITY_TYPE.get(id);
+                EntityType<?> resolved = BuiltInRegistries.ENTITY_TYPE.getValue(id);
                 if (resolved != null) entities.add(resolved);
             }
             return ((Setting<Set<EntityType<?>>>) setting).set(entities);
         }
         if (className.equals("StatusEffectListSetting")) {
-            List<StatusEffect> effects = new ArrayList<>();
+            List<MobEffect> effects = new ArrayList<>();
             for (Object item : list) {
                 Identifier id = toIdentifier(item);
                 if (id == null) continue;
-                StatusEffect resolved = Registries.STATUS_EFFECT.get(id);
+                MobEffect resolved = BuiltInRegistries.MOB_EFFECT.getValue(id);
                 if (resolved != null) effects.add(resolved);
             }
-            return ((Setting<List<StatusEffect>>) setting).set(effects);
+            return ((Setting<List<MobEffect>>) setting).set(effects);
         }
 
         return setting.parse(String.valueOf(list));
@@ -416,15 +416,15 @@ public final class SettingValueCodec {
         }
 
         if (setting.getClass().getSimpleName().equals("StatusEffectAmplifierMapSetting")) {
-            Map<StatusEffect, Integer> parsed = new LinkedHashMap<>();
+            Map<MobEffect, Integer> parsed = new LinkedHashMap<>();
             for (Map.Entry<?, ?> entry : map.entrySet()) {
                 Identifier id = toIdentifier(entry.getKey());
                 if (id == null) continue;
-                StatusEffect effect = Registries.STATUS_EFFECT.get(id);
+                MobEffect effect = BuiltInRegistries.MOB_EFFECT.getValue(id);
                 if (effect == null) continue;
                 parsed.put(effect, toInteger(entry.getValue()));
             }
-            return ((Setting<Map<StatusEffect, Integer>>) setting).set(parsed);
+            return ((Setting<Map<MobEffect, Integer>>) setting).set(parsed);
         }
 
         return setting.parse(String.valueOf(map));
@@ -433,7 +433,7 @@ public final class SettingValueCodec {
     private Identifier toIdentifier(Object raw) {
         if (raw == null) return null;
         try {
-            return Identifier.of(String.valueOf(raw));
+            return Identifier.parse(String.valueOf(raw));
         } catch (Exception ignored) {
             return null;
         }
