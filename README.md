@@ -21,7 +21,7 @@
 | [`meteor-addon/`](meteor-addon/) | `meteor-test-harness` | `38861` | Meteor Client — module CRUD, HUD, Baritone pathing, DOM over vanilla screens |
 | [`universal/`](universal/) | `universal-harness` | `38862` | Engine-agnostic Fabric mod — DOM over vanilla + owo-lib + hybrid screens (no Meteor required) |
 
-The two are independent Fabric mods sharing a Gradle multi-project. Pick `meteor-addon` for Meteor-specific automation, `universal-harness` for general Fabric-mod GUI testing (e.g. owo-lib mods like [item-editor](https://github.com/Glisco/owo-item-editor)). See [`universal/README.md`](universal/README.md) for the universal variant's scope and tool surface.
+The two are independent Fabric mods sharing a Gradle multi-project. Pick `meteor-addon` for Meteor-specific automation, `universal-harness` for general Fabric-mod GUI testing (e.g. owo-lib mods like [item-editor](https://github.com/noramibu/Item-Editor)). See [`universal/README.md`](universal/README.md) for the universal variant's scope and tool surface.
 
 </div>
 

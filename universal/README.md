@@ -16,7 +16,7 @@
 
 A standalone Fabric client mod (sibling of [`meteor-addon`](../meteor-addon/)) that embeds an MCP Streamable HTTP server at `127.0.0.1:38862/mcp`. Where the Meteor variant targets Meteor Client internals, this one targets the broader Fabric ecosystem: an LLM agent can introspect and drive any screen built on vanilla Minecraft widgets, owo-lib components, or a mix of the two.
 
-The driving use case is automated regression and exploration testing of arbitrary Fabric mods that ship GUIs — for example [item-editor](https://github.com/Glisco/owo-item-editor) — without writing per-mod glue.
+The driving use case is automated regression and exploration testing of arbitrary Fabric mods that ship GUIs — for example [item-editor](https://github.com/noramibu/Item-Editor) — without writing per-mod glue.
 
 ## Scope (v0)
 
