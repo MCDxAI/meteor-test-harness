@@ -2,13 +2,26 @@
 
 # Meteor Test Harness
 
-![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11-00800f?style=flat)
-![Fabric](https://img.shields.io/badge/Fabric-0.18.2-3d5dff?style=flat)
-![Meteor Client](https://img.shields.io/badge/Meteor_Client-1.21.11-8a11b6?style=flat)
+![Minecraft](https://img.shields.io/badge/Minecraft-26.1.2-00800f?style=flat)
+![Fabric](https://img.shields.io/badge/Fabric_Loader-0.19.2-3d5dff?style=flat)
+![Meteor Client](https://img.shields.io/badge/Meteor_Client-26.1.2-8a11b6?style=flat)
 ![Java](https://img.shields.io/badge/Java-25-e28655?style=flat)
 ![MCP SDK](https://img.shields.io/badge/MCP_SDK-1.1.1-1a9f5c?style=flat)
 
 **LLM-driven test harness for Meteor Client — expose Minecraft as an MCP server and automate the game via DOM-first screen interaction, module control, pathing, and game-state queries.**
+
+</div>
+
+<div align="center">
+
+## Projects In This Repo
+
+| Module | Mod ID | Port | What it targets |
+| --- | --- | --- | --- |
+| [`meteor-addon/`](meteor-addon/) | `meteor-test-harness` | `38861` | Meteor Client — module CRUD, HUD, Baritone pathing, DOM over vanilla screens |
+| [`universal/`](universal/) | `universal-harness` | `38862` | Engine-agnostic Fabric mod — DOM over vanilla + owo-lib + hybrid screens (no Meteor required) |
+
+The two are independent Fabric mods sharing a Gradle multi-project. Pick `meteor-addon` for Meteor-specific automation, `universal-harness` for general Fabric-mod GUI testing (e.g. owo-lib mods like [item-editor](https://github.com/Glisco/owo-item-editor)). See [`universal/README.md`](universal/README.md) for the universal variant's scope and tool surface.
 
 </div>
 
@@ -35,7 +48,7 @@
 
 | Step | Instructions |
 | --- | --- |
-| **Requirements** | • Java 25 or higher<br>• Minecraft 1.21.11<br>• Fabric Loader 0.18.2+<br>• Meteor Client 1.21.11+ |
+| **Requirements** | • Java 25 or higher<br>• Minecraft 26.1.2<br>• Fabric Loader 0.19.2+<br>• Meteor Client 26.1.2-SNAPSHOT |
 | **Installation** | 1. Download the latest `.jar` from [releases](https://github.com/MCDxAI/meteor-test-harness/releases)<br>2. Place in `.minecraft/mods/` alongside Meteor Client<br>3. Launch Minecraft with Fabric profile |
 | **Usage** | The MCP server starts automatically on launch (configurable). Connect an MCP client to `http://127.0.0.1:38861/mcp` using Streamable HTTP transport. |
 
@@ -178,21 +191,24 @@ All settings are available in the **Meteor GUI → Test Harness** tab.
 
 | Task | Command |
 | --- | --- |
-| **Build** | `./gradlew build` — Compiles and packages addon to `build/libs/` |
+| **Build all** | `./gradlew build` — Builds both `meteor-addon` and `universal` |
+| **Build one** | `./gradlew :meteor-addon:build` or `./gradlew :universal:build` — JARs land in each module's `build/libs/` |
 | **Clean Build** | `./gradlew clean build` — Removes old artifacts and rebuilds |
-| **Run Client** | `./gradlew runClient` — Launches a Fabric dev client with the addon loaded |
+| **Run Client** | `./gradlew :meteor-addon:runClient` — Launches a Fabric dev client with the addon loaded |
 | **Dependencies** | Bundled: MCP SDK 1.1.1, Embedded Tomcat 11.0.13 • Provided: Meteor Client, Fabric Loader |
 
 </div>
 
 <div align="center">
 
-## Project Structure
+## Project Structure (meteor-addon)
+
+For the universal-harness layout, see [`universal/README.md`](universal/README.md).
 
 </div>
 
 ```
-src/main/java/io/mcdxai/harness/
+meteor-addon/src/main/java/io/mcdxai/harness/
 ├── MeteorTestHarnessAddon.java     # Addon entry point (MeteorAddon subclass)
 ├── HarnessRuntime.java             # MCP server lifecycle (start/stop)
 ├── config/

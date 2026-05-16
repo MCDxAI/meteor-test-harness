@@ -18,3 +18,6 @@ plugins {
 }
 
 rootProject.name = "meteor-test-harness"
+
+include("meteor-addon")
+include("universal")

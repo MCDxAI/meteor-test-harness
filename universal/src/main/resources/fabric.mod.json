@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "universal-harness",
+  "version": "${version}",
+  "name": "Universal Test Harness",
+  "description": "Universal MCP HTTP server for automated GUI testing of Fabric mods. Vanilla + owo-lib + hybrid screen support.",
+  "authors": [
+    "GhostTypes"
+  ],
+  "contact": {
+    "homepage": "https://github.com/MCDxAI/meteor-test-harness",
+    "sources": "https://github.com/MCDxAI/meteor-test-harness"
+  },
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.mcdxai.harness.universal.UniversalHarnessMod"
+    ]
+  },
+  "mixins": [
+    "universal-harness.mixins.json"
+  ],
+  "depends": {
+    "java": ">=25",
+    "minecraft": ">=${mc_version}",
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*"
+  },
+  "recommends": {
+    "owo": "*"
+  }
+}

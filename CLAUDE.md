@@ -7,12 +7,12 @@ A **Meteor Client addon** (Fabric mod) that embeds an MCP (Model Context Protoco
 ## Tech Stack
 
 - **Minecraft** 26.1.2 (unobfuscated — no intermediary/Yarn remapping at runtime)
-- **Fabric** Loader 0.19.2, Loom 1.16-SNAPSHOT
+- **Fabric** Loader 0.19.2, Loom 1.16
 - **Meteor Client** 26.1.2-SNAPSHOT
 - **Java 25** (source/target/release 25)
 - **MCP SDK** Java 1.1.1 (`mcp-core` + `mcp-json-jackson2`)
 - **Embedded Tomcat** 11.0.13 (servlet container for MCP HTTP transport)
-- **Gradle** with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
+- **Gradle** 9.4.1 with Kotlin DSL, version catalog at `gradle/libs.versions.toml`
 
 ## Build
 

@@ -12,6 +12,10 @@ meteor = "26.1.2-SNAPSHOT"
 orbit = "0.2.4"
 baritone = "26.1-SNAPSHOT"
 
+# Universal harness deps
+fabric-api = "0.144.3+26.1"
+owo-lib = "0.13.0+26.1"
+
 # MCP SDK
 mcp = "1.1.1"
 
@@ -35,6 +39,10 @@ fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-l
 meteor-client = { module = "meteordevelopment:meteor-client", version.ref = "meteor" }
 orbit = { module = "meteordevelopment:orbit", version.ref = "orbit" }
 baritone = { module = "meteordevelopment:baritone", version.ref = "baritone" }
+
+# Universal harness deps
+fabricApi = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api" }
+owoLib = { module = "io.wispforest:owo-lib", version.ref = "owo-lib" }
 
 # MCP SDK
 mcpCore = { module = "io.modelcontextprotocol.sdk:mcp-core", version.ref = "mcp" }
