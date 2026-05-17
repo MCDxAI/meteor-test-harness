@@ -32,7 +32,7 @@ public final class NameMappingService {
 
     private static final String PRIMARY_MAPPINGS_RESOURCE = "mappings/yarn.tiny";
     private static final String LEGACY_MAPPINGS_RESOURCE = "mappings/mappings.tiny";
-    private static final String MOD_ID = "meteor-test-harness";
+    private static final String MOD_ID = "mc-test-harness-meteor";
 
     private final MappingResolver mappingResolver;
     private final Set<String> namespaces;

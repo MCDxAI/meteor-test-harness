@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class HarnessRuntime {
-    private static final Logger LOG = LoggerFactory.getLogger("universal-harness");
+    private static final Logger LOG = LoggerFactory.getLogger("mc-test-harness-universal");
 
     private final HarnessConfig config;
     private final McpServer server;

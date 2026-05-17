@@ -1,0 +1,49 @@
+{
+	"version": 1,
+	"updated": "2026-05-15T02:17:00.503Z",
+	"currentSession": {
+		"id": "462a460a-35a3-4bf2-a360-411db462ce23",
+		"startTime": "2026-05-15T02:14:21.766Z",
+		"model": "zai/glm-5.1",
+		"turnCount": 15,
+		"summary": "Ran four targeted bug fix verification tests against the universal-harness MCP server (http://127.0.0.1:38862/mcp) in a singleplayer Minecraft world. Test 1 (screenChanged honesty after key press) passed cleanly. Test 2 (checkbox toggle via DOM click) passed via click but revealed that `set_dom_value` fails with \"element_does_not_support_set_value\" for checkboxes despite the DOM advertising `set_value` as an action. Test 3 (text filter rejection on numeric fields) failed — non-numeric text \"test123\" was incorrectly accepted by a Stack Count integer field, indicating a missing or broken input filter. Test 4 passed. Two bugs were identified: set_value action advertised but unsupported for checkboxes, and numeric field text filter not rejecting non-numeric input."
+	},
+	"history": [
+		{
+			"id": "57a21961-4b54-4943-813b-264134d89dea",
+			"file": "2026-05-15T02-13-12-955Z_57a21961-4b54-4943-813b-264134d89dea.jsonl",
+			"startTime": "2026-05-15T02:13:15.849Z",
+			"endTime": "2026-05-15T02:14:15.994Z",
+			"model": "zai/glm-5.1",
+			"turnCount": 5,
+			"summary": "No summary generated."
+		},
+		{
+			"id": "b794e436-ba11-487a-89c1-86b590d20662",
+			"file": "2026-05-15T01-44-59-364Z_b794e436-ba11-487a-89c1-86b590d20662.jsonl",
+			"startTime": "2026-05-15T01:45:02.269Z",
+			"endTime": "2026-05-15T02:13:09.709Z",
+			"model": "zai/glm-5.1",
+			"turnCount": 42,
+			"summary": "No summary generated."
+		},
+		{
+			"id": "05669dc7-47d1-48ff-b6ff-69ad2a7690c3",
+			"file": "2026-05-14T00-52-50-616Z_05669dc7-47d1-48ff-b6ff-69ad2a7690c3.jsonl",
+			"startTime": "2026-05-14T00:52:53.402Z",
+			"endTime": "2026-05-14T00:52:57.061Z",
+			"model": "zai/glm-5.1",
+			"turnCount": 0,
+			"summary": "No summary generated."
+		},
+		{
+			"id": "c7543725-28b7-49fa-b4ff-1ef18250cb11",
+			"file": "2026-05-14T00-48-34-305Z_c7543725-28b7-49fa-b4ff-1ef18250cb11.jsonl",
+			"startTime": "2026-05-14T00:48:37.154Z",
+			"endTime": "2026-05-14T00:52:48.421Z",
+			"model": "zai/glm-5.1",
+			"turnCount": 10,
+			"summary": "No summary generated."
+		}
+	]
+}

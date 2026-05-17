@@ -10,7 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class HarnessConfig {
-    private static final Logger LOG = LoggerFactory.getLogger("universal-harness/config");
+    private static final Logger LOG = LoggerFactory.getLogger("mc-test-harness-universal/config");
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public String bindHost = "127.0.0.1";
@@ -48,6 +48,6 @@ public final class HarnessConfig {
     }
 
     private static Path configPath() {
-        return FabricLoader.getInstance().getConfigDir().resolve("universal-harness.json");
+        return FabricLoader.getInstance().getConfigDir().resolve("mc-test-harness-universal.json");
     }
 }

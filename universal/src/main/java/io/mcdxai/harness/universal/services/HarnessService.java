@@ -59,7 +59,7 @@ public final class HarnessService {
         ClientLevel world = mc.level;
         if (world != null) {
             try {
-                world.disconnect(Component.literal("Disconnected by universal-harness"));
+                world.disconnect(Component.literal("Disconnected by mc-test-harness"));
             } catch (Exception ignored) {
             }
         }

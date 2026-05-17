@@ -1,7 +1,7 @@
 package io.mcdxai.harness.gui;
 
 import io.mcdxai.harness.HarnessRuntime;
-import io.mcdxai.harness.MeteorTestHarnessAddon;
+import io.mcdxai.harness.McTestHarnessAddon;
 import io.mcdxai.harness.config.HarnessConfig;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.tabs.Tab;
@@ -29,7 +29,7 @@ public final class HarnessTab extends Tab {
             super(theme, tab);
             window.padding = 6;
             window.spacing = 4;
-            window.id = "meteor-test-harness-config";
+            window.id = "mc-test-harness-config";
         }
 
         @Override
@@ -53,19 +53,19 @@ public final class HarnessTab extends Tab {
 
             if (serverRunning) {
                 buttonRow.add(theme.button("Restart Server")).expandX().widget().action = () -> {
-                    HarnessRuntime runtime = MeteorTestHarnessAddon.runtime();
+                    HarnessRuntime runtime = McTestHarnessAddon.runtime();
                     if (runtime != null) runtime.restartServer();
                     reload();
                 };
 
                 buttonRow.add(theme.button("Stop Server")).expandX().widget().action = () -> {
-                    HarnessRuntime runtime = MeteorTestHarnessAddon.runtime();
+                    HarnessRuntime runtime = McTestHarnessAddon.runtime();
                     if (runtime != null) runtime.stopServer();
                     reload();
                 };
             } else {
                 buttonRow.add(theme.button("Start Server")).expandX().widget().action = () -> {
-                    HarnessRuntime runtime = MeteorTestHarnessAddon.runtime();
+                    HarnessRuntime runtime = McTestHarnessAddon.runtime();
                     if (runtime != null) runtime.startServer();
                     reload();
                 };
@@ -78,7 +78,7 @@ public final class HarnessTab extends Tab {
         }
 
         private static boolean isServerRunning() {
-            HarnessRuntime runtime = MeteorTestHarnessAddon.runtime();
+            HarnessRuntime runtime = McTestHarnessAddon.runtime();
             return runtime != null && runtime.isServerRunning();
         }
 

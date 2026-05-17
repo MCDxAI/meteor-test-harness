@@ -16,7 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class UniversalHarnessMod implements ClientModInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger("universal-harness");
+    private static final Logger LOG = LoggerFactory.getLogger("mc-test-harness-universal");
 
     private static HarnessRuntime runtime;
 

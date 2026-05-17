@@ -85,7 +85,7 @@ public final class HarnessConfig extends System<HarnessConfig> {
         .build());
 
     public HarnessConfig() {
-        super("meteor-test-harness-config");
+        super("mc-test-harness-config");
     }
 
     public static HarnessConfig get() {

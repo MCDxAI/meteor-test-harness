@@ -1,0 +1,44 @@
+## The Concept
+The majority of your config options are usually only used on one side - either the client or the server. Sometimes though, a server-side option may also affect client-side behavior in certain superficial ways, or it may even be strictly required that the client and server values match up. For these cases, owo-config supports server-client config synchronization - either for single values or even your entire config.
+
+## Implementation
+To enable config sync, simply apply the `@Sync` annotation to the option you want synchronized. When doing this, it is worth noting that the annotation cascades - that is, it applies to every option (or rather field) nested inside the one it was applied to as well. However, a more specific application always take priority - say you have sync enabled on your config class, you can then disable it for individual options and their children by applying the annotation to them again.
+
+### Sync Modes 
+ - `Option.SyncMode.NONE`: Quite self-explanatory, this is the default and makes it so the option is never synchronized in any way.
+
+ - `Option.SyncMode.INFORM_SERVER`: This sync mode only sends the client's value to the server for later use via `ConfigSynchronizer.getClientOptions(...)`, but not the other way around. 
+
+ - `Option.SyncMode.OVERRIDE_CLIENT`: Send the server's value to the client and temporarily override the client's value. Enabling `OVERRIDE_CLIENT` implies `INFORM_SERVER`
+
+To send your config's value over the network, owo's networking stack is employed - specifically the `Endec` serialization framework . It *should* support all commonly used types out-of-the box, yet it is not impossible to think of a situation where you may need a custom `Endec`. 
+
+For those cases, you can add your custom `Endec` by adding to your Config instance's `ReflectiveEndecBuilder` within the `createAndLoad` method by passing a custom `BuilderConsumer`. This allows you to add your custom `Endec` by calling the `ReflectiveEndecBuilder.register(...)` method.
+
+### Detached Options
+When a client-side option gets overridden by the server, it enters the so-called "detached" state. In this state, it is essentially a dangling container for a value without any relation to its backing field. It will not get serialized when the config gets saved and any attempt made at modifying its value will fail. Should the player open the config screen while on a server, the option will appear as "managed by the server" and cannot be edited.
+
+### Restart-only options
+When `@Sync(Option.SyncMode.OVERRIDE_CLIENT)` is applied to a field which is also annotated as `@RestartRequired`, special handling is employed. Because such a value cannot be safely overridden by the server, the server's value is instead only used for verification. In case the client's value *does not match the server*, the client will automatically disconnect and prompt the user to change the value themselves and restart.
+
+![config mismatch example](../../assets/owo/config-sync-error.png)
+
+## Config Sync Flow
+![config sync flowchart](../../assets/owo/config-sync-flow.svg)
+
+## How and why
+owo-config represents each option in your config as an instance of the `Option` class. You can obtain this internally used instance via the `optionByKey(...)` method on your wrapper by passing in the option's key. The returned object exposes a number of useful methods and properties of the option it represents.
+
+In general, the options are a convenient way to handle the individual settings in a config programmatically. For actual usage in code it is usually preferable to use the methods generated on your wrapper, which internally delegate to their underlying options.
+
+## Commonly interesting methods
+
+### `backingField()`
+Returns the field which is internally used to serialize the option's value and for storing the actual value when the `Option` object is detached. You can use it for annotation lookups as well as general reflection, if by getting the `field` record component. Technically, this also allows bypassing constraint and detached state, however any changes made won't actually ever apply.
+ 
+### `constraint()`
+Returns the constraint placed on this option's value, or `null` if the option is unconstrained. The returned object contains both a formatted description of the constraint and the actual predicate which you can use for verifying values.
+
+### `observe(...)`
+Registers a change callback which is invoked every time the value of this option actually *changes* - this means it won't be invoked if `set(...)` is called with a value for which the current value's `equals(...)` method returns `true`.
+

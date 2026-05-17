@@ -17,7 +17,7 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-rootProject.name = "meteor-test-harness"
+rootProject.name = "mc-test-harness"
 
 include("meteor-addon")
 include("universal")

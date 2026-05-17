@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 
 public final class McpServer {
-    private static final Logger LOG = LoggerFactory.getLogger("universal-harness/mcp");
+    private static final Logger LOG = LoggerFactory.getLogger("mc-test-harness-universal/mcp");
 
     private final HarnessConfig config;
     private final SessionGate sessionGate;
@@ -49,7 +49,7 @@ public final class McpServer {
             registry = new McpRegistry(config, sessionGate, adapterRegistry);
 
             mcpServer = io.modelcontextprotocol.server.McpServer.sync(transportProvider)
-                .serverInfo("universal-harness", "0.1.0")
+                .serverInfo("mc-test-harness-universal", "0.1.0")
                 .instructions("Universal MCP test harness. Use DOM tools to introspect and interact with the active screen across vanilla, owo-lib, and hybrid screens.")
                 .tools(registry.tools())
                 .resources(registry.resources())
@@ -108,7 +108,7 @@ public final class McpServer {
         Tomcat embeddedTomcat = new Tomcat();
         embeddedTomcat.setPort(config.bindPort);
 
-        String baseDir = System.getProperty("java.io.tmpdir") + "/universal-harness-tomcat";
+        String baseDir = System.getProperty("java.io.tmpdir") + "/mc-test-harness-universal-tomcat";
         embeddedTomcat.setBaseDir(baseDir);
 
         Context context = embeddedTomcat.addContext("", baseDir);

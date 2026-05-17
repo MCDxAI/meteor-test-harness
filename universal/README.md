@@ -1,6 +1,6 @@
 <div align="center">
 
-# Universal Test Harness
+# MC Test Harness (Universal)
 
 ![Minecraft](https://img.shields.io/badge/Minecraft-26.1.2-00800f?style=flat)
 ![Fabric](https://img.shields.io/badge/Fabric_Loader-0.19.2-3d5dff?style=flat)
@@ -14,7 +14,7 @@
 
 ## What This Is
 
-A standalone Fabric client mod (sibling of [`meteor-addon`](../meteor-addon/)) that embeds an MCP Streamable HTTP server at `127.0.0.1:38862/mcp`. Where the Meteor variant targets Meteor Client internals, this one targets the broader Fabric ecosystem: an LLM agent can introspect and drive any screen built on vanilla Minecraft widgets, owo-lib components, or a mix of the two.
+A standalone Fabric client mod (sibling of [`meteor-addon`](../meteor-addon/)) that embeds an MCP Streamable HTTP server at `127.0.0.1:38862/mcp`. Where the Meteor variant (`mc-test-harness-meteor`) targets Meteor Client internals, this one (`mc-test-harness-universal`) targets the broader Fabric ecosystem: an LLM agent can introspect and drive any screen built on vanilla Minecraft widgets, owo-lib components, or a mix of the two.
 
 The driving use case is automated regression and exploration testing of arbitrary Fabric mods that ship GUIs — for example [item-editor](https://github.com/noramibu/Item-Editor) — without writing per-mod glue.
 
@@ -32,7 +32,7 @@ The driving use case is automated regression and exploration testing of arbitrar
 | Step | Instructions |
 | --- | --- |
 | **Requirements** | Java 25, Minecraft 26.1.2, Fabric Loader 0.16.0+, Fabric API. owo-lib 0.13.0+26.1 recommended (any owo screen support disables silently if missing). |
-| **Build** | From repo root: `./gradlew :universal:build` — JAR lands in `universal/build/libs/`. |
+| **Build** | From repo root: `./gradlew :universal:build` — JAR (`mc-test-harness-universal-*.jar`) lands in `universal/build/libs/`. |
 | **Install** | Drop the JAR into `.minecraft/mods/`. No Meteor Client required. |
 | **Connect** | MCP Streamable HTTP at `http://127.0.0.1:38862/mcp`. |
 

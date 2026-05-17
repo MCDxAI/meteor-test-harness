@@ -48,13 +48,13 @@ This project embeds an MCP (Model Context Protocol) HTTP server inside a Minecra
 `MainThreadInvoker`, `GameStateService`, `HarnessService`, `WorldActionTools`, `WorldStateTools`, vanilla DOM paths in `DomSnapshotBuilder`/`DomInteractor`/`DomActionHints`, `DomQueryTools`, `DomInteractionTools`, `DomInputTools`
 
 ### Tier 3 — Deeply Meteor-Coupled (~12 files, needs replacement/guarding)
-`MeteorTestHarnessAddon`, `HarnessConfig`, `HarnessTab`, `ModuleService`, `SettingValueCodec`, `MeteorInfoService`, `PathingService`, `ChatLogService`, `MeteorModuleMetadata`, Meteor engine in `DomSnapshotBuilder`, Meteor widget handling in `DomInteractor`, `MeteorInfoTools`, `ModuleTools`, `PathingTools`
+`McTestHarnessAddon`, `HarnessConfig`, `HarnessTab`, `ModuleService`, `SettingValueCodec`, `MeteorInfoService`, `PathingService`, `ChatLogService`, `MeteorModuleMetadata`, Meteor engine in `DomSnapshotBuilder`, Meteor widget handling in `DomInteractor`, `MeteorInfoTools`, `ModuleTools`, `PathingTools`
 
 ### Coupling by Area
 
 | Area | Meteor-Specific Files | Generic Files |
 |------|----------------------|---------------|
-| Entry point | `MeteorTestHarnessAddon`, `HarnessConfig`, `HarnessTab` | `HarnessRuntime` (mostly) |
+| Entry point | `McTestHarnessAddon`, `HarnessConfig`, `HarnessTab` | `HarnessRuntime` (mostly) |
 | MCP infra | `McpServer` (EVENT_BUS only) | `McpRegistry`, `RegistryContext`, `SessionGate`, `ToolSchemas`, `EmbeddedWebappClassLoader` |
 | Thread dispatch | `MainThreadInvoker` (mc accessor) | Pattern is generic |
 | DOM engine | `DomSnapshotBuilder` (Meteor engine), `DomInteractor` (Meteor widgets), `DomActionHints` (Meteor methods), `MeteorModuleMetadata` | `DomQueryEngine`, `DomSnapshot`, `DomValueUtils`, `DomKeyCodec`, `DomEntryListHelper`, `ElementRef` |

@@ -1,6 +1,6 @@
 package io.mcdxai.harness.mcp;
 
-import io.mcdxai.harness.MeteorTestHarnessAddon;
+import io.mcdxai.harness.McTestHarnessAddon;
 import io.mcdxai.harness.config.HarnessConfig;
 import io.mcdxai.harness.services.ChatLogService;
 import io.modelcontextprotocol.server.McpSyncServer;
@@ -53,7 +53,7 @@ public final class McpServer {
             registry = new McpRegistry(config, sessionGate, chatLogService);
 
             mcpServer = io.modelcontextprotocol.server.McpServer.sync(transportProvider)
-                .serverInfo("meteor-test-harness", "0.1.0")
+                .serverInfo("mc-test-harness-meteor", "0.1.0")
                 .instructions("Local singleplayer Meteor test harness. Use DOM tools for all UI interactions.")
                 .tools(registry.tools())
                 .resources(registry.resources())
@@ -65,7 +65,7 @@ public final class McpServer {
 
             running = true;
 
-            MeteorTestHarnessAddon.LOG.info(
+            McTestHarnessAddon.LOG.info(
                 "MCP server started at http://{}:{}{}",
                 config.bindHost.get(),
                 config.bindPort.get(),
@@ -74,7 +74,7 @@ public final class McpServer {
 
             return true;
         } catch (Exception e) {
-            MeteorTestHarnessAddon.LOG.error("Failed to start MCP harness server.", e);
+            McTestHarnessAddon.LOG.error("Failed to start MCP harness server.", e);
             stop();
             return false;
         }
@@ -125,7 +125,7 @@ public final class McpServer {
         registry = null;
         sessionGate.clear();
 
-        MeteorTestHarnessAddon.LOG.info("MCP server stopped.");
+        McTestHarnessAddon.LOG.info("MCP server stopped.");
     }
 
     public boolean isRunning() {
@@ -136,7 +136,7 @@ public final class McpServer {
         Tomcat embeddedTomcat = new Tomcat();
         embeddedTomcat.setPort(config.bindPort.get());
 
-        String baseDir = System.getProperty("java.io.tmpdir") + "/meteor-test-harness-tomcat";
+        String baseDir = System.getProperty("java.io.tmpdir") + "/mc-test-harness-meteor-tomcat";
         embeddedTomcat.setBaseDir(baseDir);
 
         Context context = embeddedTomcat.addContext("", baseDir);

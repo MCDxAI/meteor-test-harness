@@ -1,7 +1,7 @@
 package io.mcdxai.harness.config;
 
 import io.mcdxai.harness.HarnessRuntime;
-import io.mcdxai.harness.MeteorTestHarnessAddon;
+import io.mcdxai.harness.McTestHarnessAddon;
 import meteordevelopment.meteorclient.systems.Systems;
 
 final class HarnessConfigRuntimeApplier {
@@ -14,7 +14,7 @@ final class HarnessConfigRuntimeApplier {
     }
 
     static void onAutoStartChanged(boolean autoStartEnabled) {
-        HarnessRuntime runtime = MeteorTestHarnessAddon.runtime();
+        HarnessRuntime runtime = McTestHarnessAddon.runtime();
         if (runtime == null) return;
 
         Systems.save();
@@ -24,7 +24,7 @@ final class HarnessConfigRuntimeApplier {
     }
 
     static void onServerRestartSettingChanged() {
-        HarnessRuntime runtime = MeteorTestHarnessAddon.runtime();
+        HarnessRuntime runtime = McTestHarnessAddon.runtime();
         if (runtime == null) return;
 
         Systems.save();
@@ -35,6 +35,6 @@ final class HarnessConfigRuntimeApplier {
     }
 
     private static boolean isRuntimeReady() {
-        return MeteorTestHarnessAddon.runtime() != null;
+        return McTestHarnessAddon.runtime() != null;
     }
 }

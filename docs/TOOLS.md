@@ -1,6 +1,6 @@
 # MCP Tool Registry
 
-> Complete reference for all tools exposed by the Meteor Test Harness MCP server.
+> Complete reference for all tools exposed by the MC Test Harness MCP server (Meteor variant).
 >
 > **43 tools** across 7 registration files. Organized by functional domain.
 

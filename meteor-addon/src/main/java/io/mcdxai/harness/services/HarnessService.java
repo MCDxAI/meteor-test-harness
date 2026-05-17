@@ -59,7 +59,7 @@ public class HarnessService {
         ClientLevel world = mc.level;
         if (world != null) {
             try {
-                world.disconnect(Component.literal("Disconnected by meteor-test-harness"));
+                world.disconnect(Component.literal("Disconnected by mc-test-harness"));
             } catch (Exception ignored) {
                 // Fall through to other strategies.
             }

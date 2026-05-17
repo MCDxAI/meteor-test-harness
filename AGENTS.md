@@ -37,7 +37,7 @@ The addon starts an embedded Tomcat server at `127.0.0.1:38861` with MCP endpoin
 
 ```text
 src/main/java/io/mcdxai/harness/
-  MeteorTestHarnessAddon.java      - addon entry point (MeteorAddon subclass)
+  McTestHarnessAddon.java          - addon entry point (MeteorAddon subclass)
   HarnessRuntime.java              - MCP server lifecycle (start/stop)
   config/HarnessConfig.java        - settings (bind host/port, session mode)
   dom/
